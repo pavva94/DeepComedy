@@ -37,7 +37,7 @@ latent_dim = 2048
 epochs = 20
 
 # path of the data
-data_path = 'DivinaCommedia.csv'
+data_path = 'data/DivinaCommedia.csv'
 
 name = 'all_data_test_2'
 output_dir = Path('output_%s' % name)
