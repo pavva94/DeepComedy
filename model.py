@@ -12,11 +12,8 @@ class BasicDanteRNN(Model):
         self.tl1 = BasicTrainingLine(self.lstm, self.latent_dim, self.n_tokens)
         self.tl2 = BasicTrainingLine(self.lstm, self.latent_dim, self.n_tokens)
         self.tl3 = BasicTrainingLine(self.lstm, self.latent_dim, self.n_tokens)
-        self.inp1 = [self.tl1.char_input, self.tl1.syllable_input]
-        self.inp2 = [self.tl2.char_input, self.tl2.syllable_input]
-        self.inp3 = [self.tl3.char_input, self.tl3.syllable_input]
 
-    def call(self, inputs, training=None, mask=None):
+    def call(self, inputs, training=None):
         #print(inputs) # (<tf.Tensor 'IteratorGetNext:0' shape=(None, 46, 41) dtype=float32>, <tf.Tensor 'ExpandDims:0' shape=(None, 1) dtype=int64>, <tf.Tensor 'IteratorGetNext:2' shape=(None, 46, 41) dtype=float32>, <tf.Tensor 'ExpandDims_1:0' shape=(None, 1) dtype=int64>, <tf.Tensor 'IteratorGetNext:4' shape=(None, 46, 41) dtype=float32>, <tf.Tensor 'ExpandDims_2:0' shape=(None, 1) dtype=int64>)
 
         char1, syl1, char2, syl2, char3, syl3 = inputs
@@ -38,8 +35,6 @@ class BasicTrainingLine(Model):
         super(BasicTrainingLine, self).__init__()
         self.lstm = lstm
         self.n_tokens = n_tokens
-        self.char_input = Input(shape=(None, self.n_tokens))
-        self.syllable_input = Input(shape=(1, ))
         self.dense_in = Dense(latent_dim, activation='relu')
         self.dense_out = Dense(self.n_tokens, activation='softmax')
         self.lstm_h = None
