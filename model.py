@@ -1,14 +1,17 @@
+import tensorflow as tf
 from keras.layers import Layer
-from keras.layers import Add, Dense, Input, LSTM
-from keras.models import Model, Sequential
+from keras.layers import Add, Dense, LSTM
+from keras.models import Model
+import numpy as np
 
 
 class BasicDanteRNN(Model):
-    def __init__(self, latent_dim, n_tokens, generative=False):
+    def __init__(self, latent_dim, n_tokens, tokenizer, generative=False):
         super(BasicDanteRNN, self).__init__()
         self.n_tokens = n_tokens
         self.latent_dim = latent_dim
         self.generative = generative
+        self.tokenizer = tokenizer
         self.lstm = LSTM(latent_dim, return_state=True, return_sequences=True, name='lstm')
         self.tl1 = BasicTrainingLine(self.lstm, self.latent_dim, self.n_tokens)
         self.tl2 = BasicTrainingLine(self.lstm, self.latent_dim, self.n_tokens)
@@ -19,16 +22,35 @@ class BasicDanteRNN(Model):
         outputs = []
 
         if self.generative:
-            syl1, syl2, syl3 = (11, 11, 11)
-            first_char = inputs
+            # syl1, syl2, syl3 = (11, 11, 11)
+            # syl1 = tf.expand_dims((syl1), 0)
+            # syl2 = tf.expand_dims((syl2), 0)
+            # syl3 = tf.expand_dims((syl3), 0)
 
-            x1 = self.tl1((first_char, syl1), training=False, previous_line=None)
+            # TODO: there is a better method for create a tensor with shape (None, 1) or at least with 2 dim
+            input_eval, syl = inputs
+            syl = tf.expand_dims(tf.expand_dims(syl, 0), 1)
+
+            if input_eval is None:
+                # using random start
+                first_char = chr(int(np.random.randint(ord('a'), ord('z') + 1)))
+                # print(tokenizer.texts_to_sequences(first_char))
+                # Converting start string to numbers (vectorizing)
+                input_eval = self.tokenizer.texts_to_sequences(first_char)[0]
+                input_eval = tf.expand_dims(input_eval, 0)
+
+            # print((input_eval, syl))
+
+            x1 = self.tl1((input_eval, syl), training=False, previous_line=None)
             outputs.append(x1)
 
-            x2 = self.tl2((x, syl2), training=False, previous_line=self.tl1)
-            outputs.append(x2)
+            # print(x1)
 
-            x3 = self.tl3((x2, syl3), training=False, previous_line=self.tl2)
+            x2 = self.tl2((x1, syl), training=False, previous_line=self.tl1)
+            outputs.append(x2)
+            # print(x2)
+
+            x3 = self.tl3((x2, syl), training=False, previous_line=self.tl2)
             outputs.append(x3)
         else:
 
@@ -39,12 +61,12 @@ class BasicDanteRNN(Model):
 
         # input_layer = [self.inp1, self.inp2, self.inp3]
 
-        print(outputs)
+        # print(outputs)
 
         return outputs
 
 
-class BasicTrainingLine(Model):
+class BasicTrainingLine(Layer):
     def __init__(self, lstm, latent_dim, n_tokens):
         super(BasicTrainingLine, self).__init__()
         self.lstm = lstm
@@ -62,6 +84,9 @@ class BasicTrainingLine(Model):
         #       <tf.Tensor 'input_152:0' shape=(None, 1) dtype=float32>]) NUMERO SILLABE
 
         chars, syllable = inputs
+        # print(chars)
+        # print(syllable)
+
         x = self.dense_in(syllable, training=training)
         # print(self.n_tokens)
 
@@ -94,5 +119,3 @@ class BasicTrainingLine(Model):
         # print("BasicTrainingLine End")
 
         return outputs
-
-
