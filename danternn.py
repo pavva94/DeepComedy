@@ -136,20 +136,26 @@ model.fit([
     X[2], X_syllables[:,2]
 ], [Y[0], Y[1], Y[2]], batch_size=64, epochs=epochs, validation_split=.1, callbacks=callbacks_list)
 
+
 """# Generation"""
 
-def generate_text(model, start_string):
+
+def generate_text(model):
   # Evaluation step (generating text using the learned model)
 
-  # Number of characters to generate
-  num_generate = 1000
+  # Number of Canti to generate
+  num_canti = 33
 
   first_char = chr(int(np.random.randint(ord('a'), ord('z')+1)))
-  print(tokenizer.texts_to_sequences(first_char))
-  print(tokenizer.texts_to_sequences(first_char)[0])
+  #print(tokenizer.texts_to_sequences(first_char))
+  #print(tokenizer.texts_to_sequences(first_char)[0])
   # Converting our start string to numbers (vectorizing)
-  input_eval = tokenizer.texts_to_sequences(first_char)[0]
-  input_eval = tf.expand_dims(input_eval, 0)
+  #input_eval = tokenizer.texts_to_sequences(first_char)[0]
+  #input_eval = tf.expand_dims(input_eval, 1)
+
+  input_eval = np_utils.to_categorical([
+    tokenizer.texts_to_sequences(first_char)
+    ], num_classes=n_tokens)
 
   # Empty string to store our results
   text_generated = []
@@ -159,30 +165,50 @@ def generate_text(model, start_string):
   # Experiment to find the best setting.
   temperature = 1.0
 
-  # Here batch size == 1
-  model.reset_states()
-  for i in range(num_generate):
-    predictions = model(input_eval, training=False)
-    # remove the batch dimension
-    predictions = tf.squeeze(predictions, 0)
+  # per ogni canto devo chiamare la rete e farmi restituire una terzina, 
+  # dopo devo passare come input alla seconda chiamata la fine della terzina appena creata
 
-    # using a categorical distribution to predict the character returned by the model
-    predictions = predictions / temperature
-    predicted_id = tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
+  end = False
+  generative_model.reset_states()
+  for _ in range(num_canti):
+    line_output = [[], [], []]
+    for _ in range(max_line_length):
+      predictions = generative_model((input_eval, X_syllables[0,0]), training=False)
+      #print("GENERATEEEEE {}".format(tf.squeeze(predictions)))
 
-    # We pass the predicted character as the next input to the model
-    # along with the previous hidden state
-    input_eval = tf.expand_dims([predicted_id], 0)
+      cont = 0
 
-    text_generated.append(tokenizer.sequences_to_texts([
-                predicted_id
-            ])[0].strip()[1:].replace(
-                '   ', '\n'
-            ).replace(' ', '').replace('\n', ' '))
+      # prediction is an array that contains 3 array, each one is a new char
+      for pred in predictions:
+        char = sample(pred[0,0], temperature)
+        if char == 1 and not end:
+            end = True
+        if char != 1 and end:
+            next_char = char
+            char = 1
 
-  return (start_string + ''.join(text_generated))
+        line_output[cont].append(char)
+        cont += 1
+      
+    terzina = []
+    #print(line_output)
+    for i in range(3):
+      #print(line_output[i])
+      cleaned_text = tokenizer.sequences_to_texts([
+                    line_output[i]
+                ])[0].strip()[1:].replace(
+                    '   ', '\n'
+                ).replace(' ', '').replace('\n', ' ')
 
-generative_model = BasicDanteRNN(latent_dim, n_tokens, generative=True)
+      terzina.append(cleaned_text)
+
+    #print(terzina)
+
+    text_generated.append(terzina)    
+
+  return text_generated
+
+
 
 generative_model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
