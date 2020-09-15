@@ -219,9 +219,15 @@ def sample(preds, temperature=1.0):
     probas = np.random.multinomial(1, preds, 1)
     return np.argmax(probas)
 
+generative_model = BasicDanteRNN(latent_dim, n_tokens, tokenizer, generative=True)
+
 generative_model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
-generative_model.load_weights(output_dir / '2048-20-1.34-4.87.hdf5')
+latest = tf.train.latest_checkpoint("output_all_data_test_2/")
 
+print(latest)
 
-print(generate_text(generative_model))
+generative_model.load_weights(latest)
+
+for [x,y,z] in generate_text(generative_model):
+  print(x + "\n" + y + "\n" + z + "\n\n")
