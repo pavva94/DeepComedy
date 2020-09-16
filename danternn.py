@@ -231,7 +231,7 @@ latest = tf.train.latest_checkpoint("output_all_data_test_2/")
 
 print(latest)
 
-generative_model.load_weights(latest)
+generative_model.load_weights(latest if latest else "output_all_data_test_2/2048-97-0.18.ckpt")
 
 for [x,y,z] in generate_text(generative_model):
   print(x + "\n" + y + "\n" + z + "\n\n")
