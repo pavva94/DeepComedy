@@ -140,74 +140,78 @@ model.fit([
 """# Generation"""
 
 
-def generate_text(model):
-  # Evaluation step (generating text using the learned model)
+def generate_text(model, num_terzine=33):
+    # Evaluation step (generating text using the learned model)
 
-  # Number of Canti to generate
-  num_canti = 33
-
-  first_char = chr(int(np.random.randint(ord('a'), ord('z')+1)))
-  #print(tokenizer.texts_to_sequences(first_char))
-  #print(tokenizer.texts_to_sequences(first_char)[0])
-  # Converting our start string to numbers (vectorizing)
-  #input_eval = tokenizer.texts_to_sequences(first_char)[0]
-  #input_eval = tf.expand_dims(input_eval, 1)
-
-  input_eval = np_utils.to_categorical([
-    tokenizer.texts_to_sequences(first_char)
+    first_char = chr(int(np.random.randint(ord('a'), ord('z') + 1)))
+    # print(first_char)
+    # print(tokenizer.texts_to_sequences(first_char))
+    # print(tokenizer.texts_to_sequences(first_char)[0])
+    # Converting our start string to numbers (vectorizing)
+    input_eval = np_utils.to_categorical([
+        tokenizer.texts_to_sequences(first_char)
     ], num_classes=n_tokens)
 
-  # Empty string to store our results
-  text_generated = []
+    # Empty string to store our results
+    text_generated = []
 
-  # Low temperatures results in more predictable text.
-  # Higher temperatures results in more surprising text.
-  # Experiment to find the best setting.
-  temperature = 1.0
+    # Low temperatures results in more predictable text.
+    # Higher temperatures results in more surprising text.
+    temperature = 1.5
 
-  # per ogni canto devo chiamare la rete e farmi restituire una terzina, 
-  # dopo devo passare come input alla seconda chiamata la fine della terzina appena creata
+    # given the number of Terzine to write we call the model that return a Terzina
+    # we have to pass as argument of the next call (for the next terzina) the end
+    # of the last generated terzina
 
-  end = False
-  generative_model.reset_states()
-  for _ in range(num_canti):
-    line_output = [[], [], []]
-    for _ in range(max_line_length):
-      predictions = generative_model((input_eval, X_syllables[0,0]), training=False)
-      #print("GENERATEEEEE {}".format(tf.squeeze(predictions)))
+    end = False
+    model.reset_states()
+    for _ in range(num_terzine):
+        # one array for each TrainingLine
+        line_output = [[], [], []]
+        for _ in range(max_line_length):
+            # print("START")
+            # print(input_eval)
+            predictions = model((input_eval, X_syllables[0, 0]), training=False)
 
-      cont = 0
+            cont = 0
+            # print(predictions)
+            # predictions is an array that contains 3 array, each one is a new predicted char
+            for pred in predictions:
+                char = sample(pred[0, 0], temperature)
+                # print("CHAR")
+                # print(char)
+                if char == 1 and not end:
+                    end = True
+                if char != 1 and end:
+                    next_char = char
+                    char = 1
 
-      # prediction is an array that contains 3 array, each one is a new char
-      for pred in predictions:
-        char = sample(pred[0,0], temperature)
-        if char == 1 and not end:
-            end = True
-        if char != 1 and end:
-            next_char = char
-            char = 1
+                line_output[cont].append(char)
+                cont += 1
 
-        line_output[cont].append(char)
-        cont += 1
-      
-    terzina = []
-    #print(line_output)
-    for i in range(3):
-      #print(line_output[i])
-      cleaned_text = tokenizer.sequences_to_texts([
-                    line_output[i]
-                ])[0].strip()[1:].replace(
-                    '   ', '\n'
-                ).replace(' ', '').replace('\n', ' ')
+            # use as input the last predicted line
+            # print("END")
+            input_eval = np_utils.to_categorical([
+                tokenizer.texts_to_sequences(tokenizer.sequences_to_texts([line_output[2]])[0])
+            ], num_classes=n_tokens)
 
-      terzina.append(cleaned_text)
+        terzina = []
+        # print(line_output)
+        for i in range(3):
+            # print(line_output[i])
+            cleaned_text = tokenizer.sequences_to_texts([
+                line_output[i]
+            ])[0].strip()[1:].replace(
+                '   ', '\n'
+            ).replace(' ', '').replace('\n', ' ')
 
-    #print(terzina)
+            terzina.append(cleaned_text)
 
-    text_generated.append(terzina)    
+        # print(terzina)
 
-  return text_generated
+        text_generated.append(terzina)
 
+    return text_generated
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
