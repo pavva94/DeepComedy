@@ -158,7 +158,7 @@ def get_text_matrix(sequence, len_input):
         
     return X
 
-text_matrix = get_text_matrix(encoded_text, 100)
+text_matrix = get_text_matrix(encoded_text, 200)
 
 print(text_matrix.shape)
 
@@ -201,6 +201,89 @@ from tensorflow.keras.activations import elu, relu, softmax
 
 '''
 EXPERIMENT
+CUSTOM LOSS
+'''
+def divide_versi(y):
+  doppiozero = False
+
+  # per forza devo avere 4 versi, si può????
+  y_divided = [[]]
+  for ly in y:
+    ly = int(ly)
+
+    if ly is 0:
+      if not doppiozero:
+        y_divided.append([])
+      doppiozero = True
+      continue
+
+    y_divided[-1].append(ly)
+    doppiozero = False
+
+  if y[-1] != 0:
+    # dato che l'ultima riga non finisce con 0 vuol dire che è incompleta e la rimuovo
+    y_divided.pop()
+
+  if len(y_divided[0]) < 4:
+    # se la prima riga è minore di 4 non posso farci nulla quindi la elimino
+    y_divided.pop(0)
+
+  return y_divided
+
+def rhymes_extractor(y_divided):
+  # estraggo lo schema di rime da y
+  rhymes = []
+  for i in range(len(y_divided)):
+    # con la fine del verso (ultime due lettere) controllo se le altre righe 
+    # finiscono con le stesse lettere
+    vy = y_divided[i]
+
+    # ABA BCB CDC
+
+    # devo controllare se la riga i fa rima con la riga i+2 
+    if i+2 < len(y_divided):
+      next_vy = y_divided[i+2]
+      if vy[-2:-1] == next_vy[-2:-1]:
+        rhymes.append((i, i+2))
+    if i+4 < len(y_divided):
+      next_vy = y_divided[i+4]
+      if vy[-2:-1] == next_vy[-2:-1]:
+        rhymes.append((i, i+4))
+
+  # print(rhymes)
+  return rhymes
+
+
+def get_custom_loss(x_batch, y_batch):
+
+  summed_custom_loss = 0
+  for (x, y) in zip(x_batch, y_batch):
+    x_divided = divide_versi(x)
+    y_divided = divide_versi(y)
+    # print(y_divided)
+
+    # assert len(x_divided) == len(y_divided)
+
+    x_rhymes = rhymes_extractor(x_divided)
+    y_rhymes = rhymes_extractor(y_divided)
+
+    if x_rhymes == y_rhymes:
+      custom_loss = -0.2
+      return custom_loss
+
+    custom_loss = 0.
+    if len(x_rhymes) == len(y_rhymes):
+      for i in range(len(x_rhymes)):
+        if x_rhymes[i] not in y_rhymes:
+          custom_loss += 0.15
+
+    summed_custom_loss += custom_loss
+      
+  print(summed_custom_loss/x_batch.shape[0])
+  return summed_custom_loss/x_batch.shape[0]
+
+'''
+EXPERIMENT
 MODEL
 '''
 from tensorflow.keras.models import Sequential, Model
@@ -209,7 +292,7 @@ from tensorflow.keras.activations import elu, relu, softmax
 from tensorflow.keras.metrics import categorical_accuracy, sparse_categorical_crossentropy, categorical_crossentropy
 # Define custom training utilities that are widely used for language modelling
 
-n_epochs = 200
+n_epochs = 100
 
 learning_rate = 0.001  # 0.0001
 optimizer = tf.keras.optimizers.Adamax(learning_rate=learning_rate)  # Adam
@@ -229,18 +312,22 @@ X = Input(shape=(None, ), batch_size=batch_size)  # 100 is the number of feature
 # Word-Embedding Layer
 embedded = Embedding(vocab_size, embedding_size, batch_input_shape=(batch_size, None))(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=512,
                                                          return_sequences=True,
                                                          return_state=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
-
+encoder_output = Dropout(0.3)(encoder_output)
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
 #encoder_output = Attention()(attention_input, training=True)
 
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+initial_state = [hidden_state,  cell_state]
+
+initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
+encoder_output, hidden_state, cell_state = LSTM(units=1024,
                                                          return_sequences=True,
-                                                         return_state=True)(encoder_output, initial_state=[hidden_state, cell_state])
+                                                         return_state=True)(encoder_output, initial_state=initial_state_double)
+encoder_output = Dropout(0.3)(encoder_output)
 #encoder_output = Flatten()(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
 # Prediction Layer
@@ -253,12 +340,15 @@ print(model.summary())
 
 # This is an Autograph function
 # its decorator makes it a TF op - i.e. much faster
-@tf.function
+# @tf.function
 def train_on_batch(x, y):
+    
     with tf.GradientTape() as tape:
         current_loss = tf.reduce_mean(
             tf.keras.losses.sparse_categorical_crossentropy(
-                y, model(x), from_logits = True))
+                y, model(x), from_logits = True)
+            + get_custom_loss(x, y)
+            )
     gradients = tape.gradient(current_loss, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     return current_loss
@@ -273,6 +363,12 @@ for epoch in range(n_epochs):
     sample = np.random.randint(0, text_matrix.shape[0]-1, subset_size)
     sample_train = text_matrix[ sample , : ]
     sample_target = text_matrix[ sample+1 , : ]
+
+
+    #sample = list(range(subset_size*epoch, subset_size*(epoch+1)))
+    #sample_train = text_matrix[ sample , : ]
+    #next_sample = [x+1 for x in sample]
+    #sample_target = text_matrix[ next_sample , : ]
     
     for iteration in range(sample_train.shape[0] // batch_size):
         take = iteration * batch_size
@@ -284,8 +380,8 @@ for epoch in range(n_epochs):
     
     print("{}.  \t  Loss: {}  \t  Time: {}sec/epoch".format(
         epoch+1, current_loss.numpy(), round(time.time()-start, 2)))
-    
 
+model.save("model_piramid_02.h5")
 
 '''
 EXPERIMENT
@@ -298,21 +394,26 @@ X = Input(shape=(None, ), batch_size=1)  # 100 is the number of features
 # Word-Embedding Layer
 embedded = Embedding(vocab_size, embedding_size, batch_input_shape=(batch_size, None))(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=512,
                                                          return_sequences=True,
                                                          return_state=True,
                                                 stateful=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
 
+encoder_output = Dropout(0.3)(encoder_output)
+
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
 #encoder_output = Attention()(attention_input, training=True)
+initial_state = [hidden_state,  cell_state]
 
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
+encoder_output, hidden_state, cell_state = LSTM(units=1024,
                                                          return_sequences=True,
                                                          return_state=True,
-                                                stateful=True)(encoder_output, initial_state=[hidden_state, cell_state])
+                                                stateful=True)(encoder_output, initial_state=initial_state_double)
 #encoder_output = Flatten()(encoder_output)
+encoder_output = Dropout(0.3)(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
 # Prediction Layer
 Y = Dense(units=vocab_size)(encoder_output)
@@ -373,11 +474,11 @@ RNN = Sequential([
     
     LSTM(len_input, return_sequences = True),
 
-    Dropout(0.3),
+    Dropout(0.33),
     
     Dense(hidden_size, activation = relu), 
 
-    Dropout(0.3),
+    Dropout(0.33),
 
     LSTM(len_input, return_sequences = True),
     
@@ -395,7 +496,13 @@ optimizer = tf.keras.optimizers.Adamax(learning_rate = learning_rate)  # Adam
 # its decorator makes it a TF op - i.e. much faster
 @tf.function
 def train_on_batch(x, y):
-    with tf.GradientTape() as tape:
+    with  tf.GradientTape() as tape:
+        # TODO: implementare la custom loss prendendo le rime da Y 
+        # e controllando che schema di rime c'è
+        # Avendo lo schema di rime controllare la X e dare un voto sugli ultimi
+        # 3 caratteri. Dando un punteggio coerente con il numero di lettere 
+        # che fanno rima, valutare un punteggio negativo
+
         current_loss = tf.reduce_mean(
             tf.keras.losses.sparse_categorical_crossentropy(
                 y, RNN(x), from_logits = True))
@@ -409,9 +516,16 @@ for epoch in range(n_epochs):
     start = time.time()
     
     # Take subsets of train and target
-    sample = np.random.randint(0, text_matrix.shape[0]-1, subset_size)
+    #sample = list(range(r1, r2+1))
+    #sample = np.random.randint(0, text_matrix.shape[0]-1, subset_size)
+    #sample_train = text_matrix[ sample , : ]
+    #sample_target = text_matrix[ sample+1 , : ]
+
+    # NEW SEQUENTIAL MODE
+    sample = list(range(subset_size*epoch, subset_size*(epoch+1)))
     sample_train = text_matrix[ sample , : ]
-    sample_target = text_matrix[ sample+1 , : ]
+    next_sample = [x+1 for x in sample]
+    sample_target = text_matrix[ next_sample , : ]
     
     for iteration in range(sample_train.shape[0] // batch_size):
         take = iteration * batch_size
