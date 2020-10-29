@@ -257,28 +257,51 @@ def rhymes_extractor(y_divided):
 def get_custom_loss(x_batch, y_batch):
 
   summed_custom_loss = 0
+  # x_batch ha lo shape (200, 200) quindi ho 200 vettori con 200 lettere ognuno
+  # le 200 lettere sono le feature
+
+  # scorro i 200 vettori
   for (x, y) in zip(x_batch, y_batch):
+    # dividio il vettore in versi utili
     x_divided = divide_versi(x)
     y_divided = divide_versi(y)
     # print(y_divided)
 
+    # assicuro che il numero di versi siano uguali
+    # !!! non posso perchè il generato può avere errori e quindi, per esempio,
+    # avere più versi
     # assert len(x_divided) == len(y_divided)
 
+    # estraggo lo schema di rime
     x_rhymes = rhymes_extractor(x_divided)
     y_rhymes = rhymes_extractor(y_divided)
+    # mi ritora una lista con il numero delle righe che fanno rima
+    # Esempio: [(1,3), (2,4)] significa che le righe 1 e 3 fanno rima e che le 
+    # righe 2 e 4 pure 
+    # TODO se avessimo due terzine intere si potrebbe valutare rime a 3 righe [aBaBcB]
 
+    # se lo schema di rime del generato e di dante è uguale stop
     if x_rhymes == y_rhymes:
       custom_loss = -0.2
       return custom_loss
 
     custom_loss = 0.
-    if len(x_rhymes) == len(y_rhymes):
-      for i in range(len(x_rhymes)):
-        if x_rhymes[i] not in y_rhymes:
-          custom_loss += 0.15
 
+    # per ogni coppia di righe che fanno rima nel generato controllo che la 
+    # stessa coppia di righe faccia rima in quello di dante
+    for i in range(len(x_rhymes)):
+      if x_rhymes[i] not in y_rhymes:
+        custom_loss += 0.15
+
+    # se il numero di rime del generato è minore di quello reale allora aumenta la loss
+    if len(y_rhymes) - len(x_rhymes) > 0:
+      custom_loss += 0.15 * (len(y_rhymes) - len(x_rhymes))
+
+
+    # sommo la loss per tutti i 200 vettori
     summed_custom_loss += custom_loss
-      
+  
+  # faccio una media sulla loss totale
   print(summed_custom_loss/x_batch.shape[0])
   return summed_custom_loss/x_batch.shape[0]
 
@@ -312,21 +335,21 @@ X = Input(shape=(None, ), batch_size=batch_size)  # 100 is the number of feature
 # Word-Embedding Layer
 embedded = Embedding(vocab_size, embedding_size, batch_input_shape=(batch_size, None))(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=512,
-                                                         return_sequences=True,
-                                                         return_state=True)(embedded)
+#encoder_output, hidden_state, cell_state = LSTM(units=512,
+#                                                         return_sequences=True,
+#                                                         return_state=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
-encoder_output = Dropout(0.3)(encoder_output)
+encoder_output = Dropout(0.3)(embedded)  # (encoder_output)
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
 #encoder_output = Attention()(attention_input, training=True)
 
-initial_state = [hidden_state,  cell_state]
+# initial_state   = [hidden_state,  cell_state]
 
-initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=1024,
+# initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
+encoder_output, hidden_state, cell_state = LSTM(units=4096,
                                                          return_sequences=True,
-                                                         return_state=True)(encoder_output, initial_state=initial_state_double)
+                                                         return_state=True)(encoder_output)  #, initial_state=initial_state_double)
 encoder_output = Dropout(0.3)(encoder_output)
 #encoder_output = Flatten()(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
@@ -342,7 +365,6 @@ print(model.summary())
 # its decorator makes it a TF op - i.e. much faster
 # @tf.function
 def train_on_batch(x, y):
-    
     with tf.GradientTape() as tape:
         current_loss = tf.reduce_mean(
             tf.keras.losses.sparse_categorical_crossentropy(
