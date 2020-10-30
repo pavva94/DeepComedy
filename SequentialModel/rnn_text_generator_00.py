@@ -206,11 +206,18 @@ CUSTOM LOSS
 def divide_versi(y):
   doppiozero = False
 
-  # per forza devo avere 4 versi, si può????
   y_divided = [[]]
   for ly in y:
     ly = int(ly)
 
+    # devo pulire la lista dai segni di punteggiatura, 
+    # in chartoidx significa i numeri da 1 a 10 compresi.
+    # if ly in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]: non posso perchè con i Tensor non funziona
+    if ly is 1 or ly is 2 or ly is 3 or ly is 4 or ly is 5 or ly is 6 or ly is 7 \
+        or ly is 8 or ly is 9 or ly is 10:
+      continue
+
+    # se è zero vuol dire \n quindi aggiungo una nuova riga
     if ly is 0:
       if not doppiozero:
         y_divided.append([])
@@ -220,13 +227,14 @@ def divide_versi(y):
     y_divided[-1].append(ly)
     doppiozero = False
 
-  if y[-1] != 0:
-    # dato che l'ultima riga non finisce con 0 vuol dire che è incompleta e la rimuovo
-    y_divided.pop()
+  if y_divided is not []:
+    if y[-1] != 0:
+      # dato che l'ultima riga non finisce con 0 vuol dire che è incompleta e la rimuovo
+      y_divided.pop()
 
-  if len(y_divided[0]) < 4:
-    # se la prima riga è minore di 4 non posso farci nulla quindi la elimino
-    y_divided.pop(0)
+    if len(y_divided[0]) < 4:
+      # se la prima riga è minore di 4 non posso farci nulla quindi la elimino
+      y_divided.pop(0)
 
   return y_divided
 
@@ -238,16 +246,23 @@ def rhymes_extractor(y_divided):
     # finiscono con le stesse lettere
     vy = y_divided[i]
 
+    last_word_1 = vy[-2:]
+
     # ABA BCB CDC
 
     # devo controllare se la riga i fa rima con la riga i+2 
     if i+2 < len(y_divided):
       next_vy = y_divided[i+2]
-      if vy[-2:-1] == next_vy[-2:-1]:
+      # print(vy[-2:])
+      # print(next_vy[-2:])
+      if last_word_1 == next_vy[-2:]:
         rhymes.append((i, i+2))
+    
     if i+4 < len(y_divided):
+      # print(vy[-2:])
+      # print(next_vy[-2:])
       next_vy = y_divided[i+4]
-      if vy[-2:-1] == next_vy[-2:-1]:
+      if last_word_1 == next_vy[-2:]:
         rhymes.append((i, i+4))
 
   # print(rhymes)
@@ -261,10 +276,15 @@ def get_custom_loss(x_batch, y_batch):
   # le 200 lettere sono le feature
 
   # scorro i 200 vettori
-  for (x, y) in zip(x_batch, y_batch):
+  # for (x, y) in zip(x_batch, y_batch):
+  for v in range(len(x_batch)):
+    x = x_batch[v]
+    y = y_batch[v]
+
     # dividio il vettore in versi utili
     x_divided = divide_versi(x)
     y_divided = divide_versi(y)
+    # print(x_divided)
     # print(y_divided)
 
     # assicuro che il numero di versi siano uguali
@@ -275,15 +295,19 @@ def get_custom_loss(x_batch, y_batch):
     # estraggo lo schema di rime
     x_rhymes = rhymes_extractor(x_divided)
     y_rhymes = rhymes_extractor(y_divided)
+    # print(x_rhymes)
+    # print(y_rhymes)
     # mi ritora una lista con il numero delle righe che fanno rima
     # Esempio: [(1,3), (2,4)] significa che le righe 1 e 3 fanno rima e che le 
     # righe 2 e 4 pure 
     # TODO se avessimo due terzine intere si potrebbe valutare rime a 3 righe [aBaBcB]
 
+    if x_rhymes == []:
+      return 0.9  # max custom loss
+    
     # se lo schema di rime del generato e di dante è uguale stop
     if x_rhymes == y_rhymes:
-      custom_loss = -0.2
-      return custom_loss
+      return -0.2
 
     custom_loss = 0.
 
@@ -302,7 +326,7 @@ def get_custom_loss(x_batch, y_batch):
     summed_custom_loss += custom_loss
   
   # faccio una media sulla loss totale
-  print(summed_custom_loss/x_batch.shape[0])
+  # print(summed_custom_loss/x_batch.shape[0])
   return summed_custom_loss/x_batch.shape[0]
 
 '''
