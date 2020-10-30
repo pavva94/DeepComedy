@@ -357,23 +357,27 @@ def perplexity(labels, logits):
 X = Input(shape=(None, ), batch_size=batch_size)  # 100 is the number of features
 
 # Word-Embedding Layer
-embedded = Embedding(vocab_size, embedding_size, batch_input_shape=(batch_size, None))(X)
+embedded = Embedding(vocab_size, embedding_size, 
+                     batch_input_shape=(batch_size, None), 
+                     embeddings_initializer=tf.keras.initializers.GlorotNormal(), 
+                     embeddings_regularizer=tf.keras.regularizers.L1L2()
+                     )(X)
 embedded = Dense(embedding_size, relu)(embedded)
-#encoder_output, hidden_state, cell_state = LSTM(units=512,
-#                                                         return_sequences=True,
-#                                                         return_state=True)(embedded)
+encoder_output, hidden_state, cell_state = LSTM(units=2048,
+                                                         return_sequences=True,
+                                                         return_state=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
-encoder_output = Dropout(0.3)(embedded)  # (encoder_output)
+encoder_output = Dropout(0.3)(encoder_output)
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
 #encoder_output = Attention()(attention_input, training=True)
 
-# initial_state   = [hidden_state,  cell_state]
+initial_state = [hidden_state, cell_state]
 
 # initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=4096,
+encoder_output, hidden_state, cell_state = LSTM(units=2048,
                                                          return_sequences=True,
-                                                         return_state=True)(encoder_output)  #, initial_state=initial_state_double)
+                                                         return_state=True)(encoder_output, initial_state=initial_state)
 encoder_output = Dropout(0.3)(encoder_output)
 #encoder_output = Flatten()(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
@@ -438,26 +442,26 @@ GENERATOR
 X = Input(shape=(None, ), batch_size=1)  # 100 is the number of features
 
 # Word-Embedding Layer
-embedded = Embedding(vocab_size, embedding_size, batch_input_shape=(batch_size, None))(X)
+embedded = Embedding(vocab_size, embedding_size)(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=512,
+encoder_output, hidden_state, cell_state = LSTM(units=2048,
                                                          return_sequences=True,
                                                          return_state=True,
-                                                stateful=True)(embedded)
+                                              stateful=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
 
 encoder_output = Dropout(0.3)(encoder_output)
 
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
-#encoder_output = Attention()(attention_input, training=True)
+# encoder_output = Attention()(attention_input, training=True)
 initial_state = [hidden_state,  cell_state]
 
-initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=1024,
+# initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
+encoder_output, hidden_state, cell_state = LSTM(units=2048,
                                                          return_sequences=True,
                                                          return_state=True,
-                                                stateful=True)(encoder_output, initial_state=initial_state_double)
+                                                stateful=True)(encoder_output, initial_state=initial_state)
 #encoder_output = Flatten()(encoder_output)
 encoder_output = Dropout(0.3)(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
