@@ -158,7 +158,7 @@ def get_text_matrix(sequence, len_input):
         
     return X
 
-text_matrix = get_text_matrix(encoded_text, 200)
+text_matrix = get_text_matrix(encoded_text, 100)
 
 print(text_matrix.shape)
 
@@ -191,13 +191,62 @@ subset_size = batch_size * 100
 # vector size of char embeddings
 embedding_size = 300  # 250
 
-len_input = 1024   # 200
+len_input = 2048   # 200
 
 hidden_size = 300  # for Dense() layers 250
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
 from tensorflow.keras.activations import elu, relu, softmax
+
+x = tf.constant([ 4, 40, 43, 43, 36, 38, 42, 40,  9,  1,  0,  0, 36,  1, 49, 59,  1, 34,
+ 45, 43, 36,  1, 35, 40,  1, 42, 36, 40,  1, 33, 36, 52, 52, 36,  1, 42,
+ 32,  1, 38, 48, 45, 44, 35, 31,  0, 35, 36,  1, 42, 36,  1, 46, 32, 42,
+ 46, 36, 33, 48, 36,  1, 43, 40, 36,  5,  1, 34, 45, 49, 59,  1, 43, 40,
+  1, 46, 32, 48, 52, 36,  0, 35, 40,  1, 49, 51, 32,  1, 42, 51, 44, 38,
+ 39, 36, 55, 55, 32,  1, 35, 40, 52, 36, 44, 51, 50, 32,  1, 50, 45, 44,
+ 35, 32,  7,  1,  0,  0, 24, 45, 40,  5,  1, 34, 45, 43, 36,  1, 38, 36,
+ 44, 50, 36,  1, 49, 50, 32, 50, 32,  1, 49, 45, 50, 50, 45,  1, 42, 32,
+ 48, 52, 36,  5,  0, 34, 39, 36,  1, 46, 32, 48, 36,  1, 32, 42, 50, 48,
+ 45,  1, 34, 39, 36,  1, 46, 48, 40, 43, 32,  5,  1, 49, 36,  1, 49, 40,
+  1, 49, 52, 36, 49, 50, 36,  0, 42, 32,  1, 49, 36, 43, 33, 40, 32, 44,
+ 55, 32], dtype='float32', shape=(1, 200))
+
+y = tf.constant([40, 43, 43, 36, 38, 42, 40,  9,  1,  0,  0, 36,  1, 49, 59,  1, 34, 45,
+ 43, 36,  1, 35, 40,  1, 42, 36, 40,  1, 33, 36, 52, 52, 36,  1, 42, 32,
+  1, 38, 48, 45, 44, 35, 32,  0, 35, 36,  1, 42, 36,  1, 46, 32, 42, 46,
+ 36, 33, 48, 36,  1, 43, 40, 36,  5,  1, 34, 45, 49, 59,  1, 43, 40,  1,
+ 46, 32, 48, 52, 36,  0, 35, 40,  1, 49, 51, 32,  1, 42, 51, 44, 38, 39,
+ 36, 55, 55, 32,  1, 35, 40, 52, 36, 44, 51, 50, 32,  1, 50, 45, 44, 35,
+ 32,  7,  1,  0,  0, 24, 45, 40,  5,  1, 34, 45, 43, 36,  1, 38, 36, 44,
+ 50, 36,  1, 49, 50, 32, 50, 32,  1, 49, 45, 50, 50, 45,  1, 42, 32, 48,
+ 52, 36,  5,  0, 34, 39, 36,  1, 46, 32, 48, 36,  1, 32, 42, 50, 48, 45,
+  1, 34, 39, 36,  1, 46, 48, 40, 43, 32,  5,  1, 49, 36,  1, 49, 40,  1,
+ 49, 52, 36, 49, 50, 36,  0, 42, 32,  1, 49, 36, 43, 33, 40, 32, 44, 55,
+ 32,  1], dtype='float32', shape=(1, 200))
+
+
+get_custom_loss(x, y)
+
+[[4, 40, 43, 43, 36, 38, 42, 40, 9, 1], 
+ [36, 1, 49, 59, 1, 34, 45, 43, 36, 1, 35, 40, 1, 42, 36, 40, 1, 33, 36, 52, 52, 36, 1, 42, 32, 1, 38, 48, 45, 44, 35, 32], 
+ [35, 36, 1, 42, 36, 1, 46, 32, 42, 46, 36, 33, 48, 36, 1, 43, 40, 36, 5, 1, 34, 45, 49, 59, 1, 43, 40, 1, 46, 32, 48, 52, 36], 
+ [35, 40, 1, 49, 51, 32, 1, 42, 51, 44, 38, 39, 36, 55, 55, 32, 1, 35, 40, 52, 36, 44, 51, 50, 32, 1, 50, 45, 44, 35, 32, 7, 1], 
+ [24, 45, 40, 5, 1, 34, 45, 43, 36, 1, 38, 36, 44, 50, 36, 1, 49, 50, 32, 50, 32, 1, 49, 45, 50, 50, 45, 1, 42, 32, 48, 52, 36, 5], 
+ [34, 39, 36, 1, 46, 32, 48, 36, 1, 32, 42, 50, 48, 45, 1, 34, 39, 36, 1, 46, 48, 40, 43, 32, 5, 1, 49, 36, 1, 49, 40, 1, 49, 52, 36, 49, 50, 36]]
+
+idx2char = { v: k for k, v in char2idx.items() }
+text_generated = ""
+for x in [[4, 40, 43, 43, 36, 38, 42, 40, 9, 1], 
+          [36, 1, 49, 59, 1, 34, 45, 43, 36, 1, 35, 40, 1, 42, 36, 40, 1, 33, 36, 52, 52, 36, 1, 42, 32, 1, 38, 48, 45, 44, 35, 32], 
+          [35, 36, 1, 42, 36, 1, 46, 32, 42, 46, 36, 33, 48, 36, 1, 43, 40, 36, 5, 1, 34, 45, 49, 59, 1, 43, 40, 1, 46, 32, 48, 52, 36], 
+          [35, 40, 1, 49, 51, 32, 1, 42, 51, 44, 38, 39, 36, 55, 55, 32, 1, 35, 40, 52, 36, 44, 51, 50, 32, 1, 50, 45, 44, 35, 32, 7, 1], 
+          [24, 45, 40, 5, 1, 34, 45, 43, 36, 1, 38, 36, 44, 50, 36, 1, 49, 50, 32, 50, 32, 1, 49, 45, 50, 50, 45, 1, 42, 32, 48, 52, 36, 5], 
+          [34, 39, 36, 1, 46, 32, 48, 36, 1, 32, 42, 50, 48, 45, 1, 34, 39, 36, 1, 46, 48, 40, 43, 32, 5, 1, 49, 36, 1, 49, 40, 1, 49, 52, 36, 49, 50, 36]]:
+  for predicted_id in x:
+    text_generated += idx2char[predicted_id]
+  text_generated += '\n'
+print(text_generated)
 
 '''
 EXPERIMENT
@@ -212,20 +261,20 @@ def divide_versi(y):
 
     # devo pulire la lista dai segni di punteggiatura, 
     # in chartoidx significa i numeri da 1 a 10 compresi.
-    # if ly in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]: non posso perchè con i Tensor non funziona
-    if ly is 1 or ly is 2 or ly is 3 or ly is 4 or ly is 5 or ly is 6 or ly is 7 \
-        or ly is 8 or ly is 9 or ly is 10:
-      continue
+    if ly in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:  #non posso perchè con i Tensor non funziona
+    # if ly is 1 or ly is 2 or ly is 3 or ly is 4 or ly is 5 or ly is 6 or ly is 7 \
+    #    or ly is 8 or ly is 9 or ly is 10:
+        continue
+    else:
+      # se è zero vuol dire \n quindi aggiungo una nuova riga
+      if ly is 0:
+        if not doppiozero:
+          y_divided.append([])
+        doppiozero = True
+        continue
 
-    # se è zero vuol dire \n quindi aggiungo una nuova riga
-    if ly is 0:
-      if not doppiozero:
-        y_divided.append([])
-      doppiozero = True
-      continue
-
-    y_divided[-1].append(ly)
-    doppiozero = False
+      y_divided[-1].append(ly)
+      doppiozero = False
 
   if y_divided is not []:
     if y[-1] != 0:
@@ -270,13 +319,15 @@ def rhymes_extractor(y_divided):
 
 
 def get_custom_loss(x_batch, y_batch):
-
   summed_custom_loss = 0
   # x_batch ha lo shape (200, 200) quindi ho 200 vettori con 200 lettere ognuno
   # le 200 lettere sono le feature
 
+  x_bin_tot = np.ones(1)
+  y_bin_tot = np.ones(1)
+
   # scorro i 200 vettori
-  # for (x, y) in zip(x_batch, y_batch):
+  # for (x, y) in zip(x_batch, y_batch):  # Non funziona con i tensori
   for v in range(len(x_batch)):
     x = x_batch[v]
     y = y_batch[v]
@@ -284,20 +335,17 @@ def get_custom_loss(x_batch, y_batch):
     # dividio il vettore in versi utili
     x_divided = divide_versi(x)
     y_divided = divide_versi(y)
-    # print(x_divided)
-    # print(y_divided)
 
     # assicuro che il numero di versi siano uguali
     # !!! non posso perchè il generato può avere errori e quindi, per esempio,
-    # avere più versi
+    # avere più o meno versi
     # assert len(x_divided) == len(y_divided)
 
     # estraggo lo schema di rime
     x_rhymes = rhymes_extractor(x_divided)
     y_rhymes = rhymes_extractor(y_divided)
-    # print(x_rhymes)
-    # print(y_rhymes)
-    # mi ritora una lista con il numero delle righe che fanno rima
+
+    # mi ritorna una lista con il numero delle righe che fanno rima
     # Esempio: [(1,3), (2,4)] significa che le righe 1 e 3 fanno rima e che le 
     # righe 2 e 4 pure 
     # TODO se avessimo due terzine intere si potrebbe valutare rime a 3 righe [aBaBcB]
@@ -309,25 +357,29 @@ def get_custom_loss(x_batch, y_batch):
     if x_rhymes == y_rhymes:
       return -0.2
 
-    custom_loss = 0.
+    # creo un vettore di 1 per la y perchè le rime ci sono sempre
+    y_bin = np.ones(len(y_rhymes))
+    # creo un vettore di 0 per le rime generate, metterò 1 se la rima 
+    # corrispondente è valida (cioè in dante)
+    x_bin = np.zeros(len(y_rhymes))
 
-    # per ogni coppia di righe che fanno rima nel generato controllo che la 
-    # stessa coppia di righe faccia rima in quello di dante
-    for i in range(len(x_rhymes)):
-      if x_rhymes[i] not in y_rhymes:
-        custom_loss += 0.15
+    # se la rima generata è nelle rime originali di Dante allora la segno come valida
+    for i in range(len(y_rhymes)):
+      if y_rhymes[i] in x_rhymes:
+        x_bin[i] = 1
 
-    # se il numero di rime del generato è minore di quello reale allora aumenta la loss
-    if len(y_rhymes) - len(x_rhymes) > 0:
-      custom_loss += 0.15 * (len(y_rhymes) - len(x_rhymes))
+    # concateno i vettori con l'encoding delle rime
+    x_bin_tot = np.concatenate((x_bin_tot, x_bin))
+    y_bin_tot = np.concatenate((y_bin_tot, y_bin))
 
+  # MSE sui vettori
+  return tf.keras.losses.mean_squared_error(y_bin_tot, x_bin_tot)
 
-    # sommo la loss per tutti i 200 vettori
-    summed_custom_loss += custom_loss
-  
-  # faccio una media sulla loss totale
-  # print(summed_custom_loss/x_batch.shape[0])
-  return summed_custom_loss/x_batch.shape[0]
+# NEW VERSION
+# creo un vettore con le rime di y reale e di y generato
+# Ex: in y reale se ho ABABC il vettore è [1,2,1,2,3] con o zero ad indicare nulla
+# per y generato devo creare un vettore di lunghezza uguale per poi valutarlo con una sparse_crossentropy
+# problema: non avrà mai le stesse righe
 
 '''
 EXPERIMENT
@@ -363,7 +415,7 @@ embedded = Embedding(vocab_size, embedding_size,
                      embeddings_regularizer=tf.keras.regularizers.L1L2()
                      )(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=1024,
                                                          return_sequences=True,
                                                          return_state=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
@@ -375,7 +427,7 @@ encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 initial_state = [hidden_state, cell_state]
 
 # initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=1024,
                                                          return_sequences=True,
                                                          return_state=True)(encoder_output, initial_state=initial_state)
 encoder_output = Dropout(0.3)(encoder_output)
@@ -431,7 +483,7 @@ for epoch in range(n_epochs):
     print("{}.  \t  Loss: {}  \t  Time: {}sec/epoch".format(
         epoch+1, current_loss.numpy(), round(time.time()-start, 2)))
 
-model.save("model_piramid_02.h5")
+model.save("model_custom_loss_00.h5")
 
 '''
 EXPERIMENT
@@ -444,7 +496,7 @@ X = Input(shape=(None, ), batch_size=1)  # 100 is the number of features
 # Word-Embedding Layer
 embedded = Embedding(vocab_size, embedding_size)(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=1024,
                                                          return_sequences=True,
                                                          return_state=True,
                                               stateful=True)(embedded)
@@ -458,7 +510,7 @@ encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 initial_state = [hidden_state,  cell_state]
 
 # initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=1024,
                                                          return_sequences=True,
                                                          return_state=True,
                                                 stateful=True)(encoder_output, initial_state=initial_state)
@@ -537,14 +589,14 @@ RNN = Sequential([
 
 RNN.summary()
 
-n_epochs = 20
+n_epochs = 150
 
 learning_rate = 0.001  # 0.0001
 optimizer = tf.keras.optimizers.Adamax(learning_rate = learning_rate)  # Adam
 
 # This is an Autograph function
 # its decorator makes it a TF op - i.e. much faster
-@tf.function
+# @tf.function
 def train_on_batch(x, y):
     with  tf.GradientTape() as tape:
         # TODO: implementare la custom loss prendendo le rime da Y 
@@ -555,7 +607,8 @@ def train_on_batch(x, y):
 
         current_loss = tf.reduce_mean(
             tf.keras.losses.sparse_categorical_crossentropy(
-                y, RNN(x), from_logits = True))
+                y, RNN(x), from_logits = True) 
+            + get_custom_loss(x, y))
     gradients = tape.gradient(current_loss, RNN.trainable_variables)
     optimizer.apply_gradients(zip(gradients, RNN.trainable_variables))
     return current_loss
@@ -566,16 +619,15 @@ for epoch in range(n_epochs):
     start = time.time()
     
     # Take subsets of train and target
-    #sample = list(range(r1, r2+1))
-    #sample = np.random.randint(0, text_matrix.shape[0]-1, subset_size)
-    #sample_train = text_matrix[ sample , : ]
-    #sample_target = text_matrix[ sample+1 , : ]
+    sample = np.random.randint(0, text_matrix.shape[0]-1, subset_size)
+    sample_train = text_matrix[ sample , : ]
+    sample_target = text_matrix[ sample+1 , : ]
 
     # NEW SEQUENTIAL MODE
-    sample = list(range(subset_size*epoch, subset_size*(epoch+1)))
-    sample_train = text_matrix[ sample , : ]
-    next_sample = [x+1 for x in sample]
-    sample_target = text_matrix[ next_sample , : ]
+    # sample = list(range(subset_size*epoch, subset_size*(epoch+1)))
+    # sample_train = text_matrix[ sample , : ]
+    # next_sample = [x+1 for x in sample]
+    # sample_target = text_matrix[ next_sample , : ]
     
     for iteration in range(sample_train.shape[0] // batch_size):
         take = iteration * batch_size
