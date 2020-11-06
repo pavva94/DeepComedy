@@ -26,6 +26,11 @@ import pandas as pd
 import tensorflow as tf
 print(tf.__version__)
 
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Attention, Flatten, Input
+from tensorflow.keras.activations import elu, relu, softmax
+from tensorflow.keras.metrics import categorical_accuracy, sparse_categorical_crossentropy, categorical_crossentropy
+
 from matplotlib import pyplot as plt
 
 # Read file from Colab Notebook
@@ -171,82 +176,9 @@ print(text_matrix[ 102, : ])
 print("\n\n115th target sequence:\n")
 print(text_matrix[ 180, : ])
 
-"""# Architecture
-
-At this point, I can specify the RNN architecture with all its hyperparameters. An `Embedding()` layer will first learn a representation of each character; the sequence of chracters embedding will then be fed into an `LSTM()` layer, that will extract information from their sequence; `Dense()` layers at the end will produce the next character prediction.
-
-The Network is structured to be fed with batches of data of fixed size.
+"""## Custom Loss
+Evaluate the structure of the rhymes, based on the real scheme
 """
-
-# size of vocabulary
-vocab_size = len(char2idx)
-
-# size of mini batches during training
-batch_size = 200  # 100
-
-
-# size of training subset at each epoch
-subset_size = batch_size * 100
-
-# vector size of char embeddings
-embedding_size = 300  # 250
-
-len_input = 2048   # 200
-
-hidden_size = 300  # for Dense() layers 250
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
-from tensorflow.keras.activations import elu, relu, softmax
-
-x = tf.constant([ 4, 40, 43, 43, 36, 38, 42, 40,  9,  1,  0,  0, 36,  1, 49, 59,  1, 34,
- 45, 43, 36,  1, 35, 40,  1, 42, 36, 40,  1, 33, 36, 52, 52, 36,  1, 42,
- 32,  1, 38, 48, 45, 44, 35, 31,  0, 35, 36,  1, 42, 36,  1, 46, 32, 42,
- 46, 36, 33, 48, 36,  1, 43, 40, 36,  5,  1, 34, 45, 49, 59,  1, 43, 40,
-  1, 46, 32, 48, 52, 36,  0, 35, 40,  1, 49, 51, 32,  1, 42, 51, 44, 38,
- 39, 36, 55, 55, 32,  1, 35, 40, 52, 36, 44, 51, 50, 32,  1, 50, 45, 44,
- 35, 32,  7,  1,  0,  0, 24, 45, 40,  5,  1, 34, 45, 43, 36,  1, 38, 36,
- 44, 50, 36,  1, 49, 50, 32, 50, 32,  1, 49, 45, 50, 50, 45,  1, 42, 32,
- 48, 52, 36,  5,  0, 34, 39, 36,  1, 46, 32, 48, 36,  1, 32, 42, 50, 48,
- 45,  1, 34, 39, 36,  1, 46, 48, 40, 43, 32,  5,  1, 49, 36,  1, 49, 40,
-  1, 49, 52, 36, 49, 50, 36,  0, 42, 32,  1, 49, 36, 43, 33, 40, 32, 44,
- 55, 32], dtype='float32', shape=(1, 200))
-
-y = tf.constant([40, 43, 43, 36, 38, 42, 40,  9,  1,  0,  0, 36,  1, 49, 59,  1, 34, 45,
- 43, 36,  1, 35, 40,  1, 42, 36, 40,  1, 33, 36, 52, 52, 36,  1, 42, 32,
-  1, 38, 48, 45, 44, 35, 32,  0, 35, 36,  1, 42, 36,  1, 46, 32, 42, 46,
- 36, 33, 48, 36,  1, 43, 40, 36,  5,  1, 34, 45, 49, 59,  1, 43, 40,  1,
- 46, 32, 48, 52, 36,  0, 35, 40,  1, 49, 51, 32,  1, 42, 51, 44, 38, 39,
- 36, 55, 55, 32,  1, 35, 40, 52, 36, 44, 51, 50, 32,  1, 50, 45, 44, 35,
- 32,  7,  1,  0,  0, 24, 45, 40,  5,  1, 34, 45, 43, 36,  1, 38, 36, 44,
- 50, 36,  1, 49, 50, 32, 50, 32,  1, 49, 45, 50, 50, 45,  1, 42, 32, 48,
- 52, 36,  5,  0, 34, 39, 36,  1, 46, 32, 48, 36,  1, 32, 42, 50, 48, 45,
-  1, 34, 39, 36,  1, 46, 48, 40, 43, 32,  5,  1, 49, 36,  1, 49, 40,  1,
- 49, 52, 36, 49, 50, 36,  0, 42, 32,  1, 49, 36, 43, 33, 40, 32, 44, 55,
- 32,  1], dtype='float32', shape=(1, 200))
-
-
-get_custom_loss(x, y)
-
-[[4, 40, 43, 43, 36, 38, 42, 40, 9, 1], 
- [36, 1, 49, 59, 1, 34, 45, 43, 36, 1, 35, 40, 1, 42, 36, 40, 1, 33, 36, 52, 52, 36, 1, 42, 32, 1, 38, 48, 45, 44, 35, 32], 
- [35, 36, 1, 42, 36, 1, 46, 32, 42, 46, 36, 33, 48, 36, 1, 43, 40, 36, 5, 1, 34, 45, 49, 59, 1, 43, 40, 1, 46, 32, 48, 52, 36], 
- [35, 40, 1, 49, 51, 32, 1, 42, 51, 44, 38, 39, 36, 55, 55, 32, 1, 35, 40, 52, 36, 44, 51, 50, 32, 1, 50, 45, 44, 35, 32, 7, 1], 
- [24, 45, 40, 5, 1, 34, 45, 43, 36, 1, 38, 36, 44, 50, 36, 1, 49, 50, 32, 50, 32, 1, 49, 45, 50, 50, 45, 1, 42, 32, 48, 52, 36, 5], 
- [34, 39, 36, 1, 46, 32, 48, 36, 1, 32, 42, 50, 48, 45, 1, 34, 39, 36, 1, 46, 48, 40, 43, 32, 5, 1, 49, 36, 1, 49, 40, 1, 49, 52, 36, 49, 50, 36]]
-
-idx2char = { v: k for k, v in char2idx.items() }
-text_generated = ""
-for x in [[4, 40, 43, 43, 36, 38, 42, 40, 9, 1], 
-          [36, 1, 49, 59, 1, 34, 45, 43, 36, 1, 35, 40, 1, 42, 36, 40, 1, 33, 36, 52, 52, 36, 1, 42, 32, 1, 38, 48, 45, 44, 35, 32], 
-          [35, 36, 1, 42, 36, 1, 46, 32, 42, 46, 36, 33, 48, 36, 1, 43, 40, 36, 5, 1, 34, 45, 49, 59, 1, 43, 40, 1, 46, 32, 48, 52, 36], 
-          [35, 40, 1, 49, 51, 32, 1, 42, 51, 44, 38, 39, 36, 55, 55, 32, 1, 35, 40, 52, 36, 44, 51, 50, 32, 1, 50, 45, 44, 35, 32, 7, 1], 
-          [24, 45, 40, 5, 1, 34, 45, 43, 36, 1, 38, 36, 44, 50, 36, 1, 49, 50, 32, 50, 32, 1, 49, 45, 50, 50, 45, 1, 42, 32, 48, 52, 36, 5], 
-          [34, 39, 36, 1, 46, 32, 48, 36, 1, 32, 42, 50, 48, 45, 1, 34, 39, 36, 1, 46, 48, 40, 43, 32, 5, 1, 49, 36, 1, 49, 40, 1, 49, 52, 36, 49, 50, 36]]:
-  for predicted_id in x:
-    text_generated += idx2char[predicted_id]
-  text_generated += '\n'
-print(text_generated)
 
 '''
 EXPERIMENT
@@ -381,22 +313,43 @@ def get_custom_loss(x_batch, y_batch):
 # per y generato devo creare un vettore di lunghezza uguale per poi valutarlo con una sparse_crossentropy
 # problema: non avrà mai le stesse righe
 
-'''
-EXPERIMENT
-MODEL
-'''
-from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Attention, Flatten, Input
-from tensorflow.keras.activations import elu, relu, softmax
-from tensorflow.keras.metrics import categorical_accuracy, sparse_categorical_crossentropy, categorical_crossentropy
-# Define custom training utilities that are widely used for language modelling
+# extract matrix of index of where the zeros are
+#tf.map_fn(fn=lambda t: t.map_fn(fn=lambda x: 1 if x == 0 else 0), elems=x_batch)
+
+"""# Architecture
+
+At this point, I can specify the RNN architecture with all its hyperparameters. An `Embedding()` layer will first learn a representation of each character; the sequence of chracters embedding will then be fed into an `LSTM()` layer, that will extract information from their sequence; `Dense()` layers at the end will produce the next character prediction.
+
+The Network is structured to be fed with batches of data of fixed size.
+"""
+
+# size of vocabulary
+vocab_size = len(char2idx)
+
+# size of mini batches during training
+batch_size = 200  # 100
+
+# size of training subset at each epoch
+subset_size = batch_size * 100
+
+# vector size of char embeddings
+embedding_size = 300  # 250
+
+len_input = 2048   # 200
+
+hidden_size = 300  # for Dense() layers 250
 
 n_epochs = 50
 
 # learning_rate = 0.001  # 0.0001
 
+'''
+EXPERIMENT
+MODEL
+'''
+
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-  def __init__(self, d_model, warmup_steps=4000):
+  def __init__(self, d_model, warmup_steps=15):
     super(CustomSchedule, self).__init__()
 
     self.d_model = d_model
@@ -505,6 +458,19 @@ model.save("model_custom_loss_01.h5")
 from google.colab import files
 files.download('model_custom_loss_01.h5')
 
+plt.plot(loss_history)
+plt.title("Training Loss")
+plt.show()
+
+"""# Text Generation
+
+At this point, let's check how the model generates text. In order to do it, I must make some changes to my RNN architecture above.
+
+First, I must change the fixed batch size. After training, I want to feed just one sentence into my Network to make it continue the character sequence. I will feed a string into the model, make it predict the next character, update the input sequence, and repeat the process until a long generated text is obtained. Because of this, the succession of input sequences is now different from training session, in which portions of text were sampled randomly. I now have to set `stateufl = True` in the `LSTM()` layer, so that each LSTM cell will keep in memory the internal state from the previous sequence. With this I hope the model will better remember sequential information while generating text.
+
+I will instantiate a new `generator` RNN with these new features, and transfer the trained weights of my `RNN` into it.
+"""
+
 '''
 EXPERIMENT
 GENERATOR
@@ -545,156 +511,6 @@ generator = Model(inputs=X, outputs=Y)
 generator.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), optimizer='adam', metrics=[perplexity, sparse_categorical_crossentropy])
 print(model.summary())
 
-
-# Import trained weights from model to generator
-generator.set_weights(model.get_weights())
-
-def generate_text(start_string, num_generate = 1000, temperature = 1.0):
-    
-    # Vectorize input string
-    input_eval = [char2idx[s] for s in start_string]  
-    input_eval = tf.expand_dims(input_eval, 0)
-    
-    text_generated = [] # List to append predicted chars 
-    
-    idx2char = { v: k for k, v in char2idx.items() }  # invert char-index mapping
-    
-    generator.reset_states()
-    
-    for i in range(num_generate):
-        predictions = generator(input_eval)
-        predictions = tf.squeeze(predictions, 0)
-        
-        # sample next char based on distribution and temperature
-        predictions = predictions / temperature
-        predicted_id = tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
-        
-        input_eval = tf.expand_dims([predicted_id], 0)
-
-        text_generated.append(idx2char[predicted_id])
-        
-    return (start_string + ''.join(text_generated))
-
-
-# Let's feed the first lines:
-start_string = """
-Nel mezzo del cammin di nostra vita
-mi ritrovai per una selva oscura,
-chè la diritta via era smarrita.
-
-"""
-
-for t in [0.1, 0.5, 1.0, 1.5, 2]:
-    print("####### TEXT GENERATION - temperature = {}\n".format(t))
-    print(generate_text(start_string = start_string, num_generate = 1000, temperature = t))
-    print("\n\n\n")
-
-RNN = Sequential([
-    Embedding(vocab_size, embedding_size,
-              batch_input_shape=(batch_size, None)),
-    Dense(embedding_size, activation = relu),
-    
-    LSTM(len_input, return_sequences = True),
-
-    Dropout(0.33),
-    
-    Dense(hidden_size, activation = relu), 
-
-    Dropout(0.33),
-
-    LSTM(len_input, return_sequences = True),
-    
-    Dense(vocab_size)
-])
-
-RNN.summary()
-
-n_epochs = 150
-
-learning_rate = 0.001  # 0.0001
-optimizer = tf.keras.optimizers.Adamax(learning_rate = learning_rate)  # Adam
-
-# This is an Autograph function
-# its decorator makes it a TF op - i.e. much faster
-# @tf.function
-def train_on_batch(x, y):
-    with  tf.GradientTape() as tape:
-        # TODO: implementare la custom loss prendendo le rime da Y 
-        # e controllando che schema di rime c'è
-        # Avendo lo schema di rime controllare la X e dare un voto sugli ultimi
-        # 3 caratteri. Dando un punteggio coerente con il numero di lettere 
-        # che fanno rima, valutare un punteggio negativo
-
-        current_loss = tf.reduce_mean(
-            tf.keras.losses.sparse_categorical_crossentropy(
-                y, RNN(x), from_logits = True) 
-            + get_custom_loss(x, y))
-    gradients = tape.gradient(current_loss, RNN.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, RNN.trainable_variables))
-    return current_loss
-
-loss_history = []
-
-for epoch in range(n_epochs):
-    start = time.time()
-    
-    # Take subsets of train and target
-    sample = np.random.randint(0, text_matrix.shape[0]-1, subset_size)
-    sample_train = text_matrix[ sample , : ]
-    sample_target = text_matrix[ sample+1 , : ]
-
-    # NEW SEQUENTIAL MODE
-    # sample = list(range(subset_size*epoch, subset_size*(epoch+1)))
-    # sample_train = text_matrix[ sample , : ]
-    # next_sample = [x+1 for x in sample]
-    # sample_target = text_matrix[ next_sample , : ]
-    
-    for iteration in range(sample_train.shape[0] // batch_size):
-        take = iteration * batch_size
-        x = sample_train[ take:take+batch_size , : ]
-        y = sample_target[ take:take+batch_size , : ]
-
-        current_loss = train_on_batch(x, y)
-        loss_history.append(current_loss)
-    
-    print("{}.  \t  Loss: {}  \t  Time: {}ss".format(
-        epoch+1, current_loss.numpy(), round(time.time()-start, 2)))
-
-plt.plot(loss_history)
-plt.title("Training Loss")
-plt.show()
-
-RNN.save( "text_generator_RNN_03.h5")
-
-"""# Text Generation
-
-At this point, let's check how the model generates text. In order to do it, I must make some changes to my RNN architecture above.
-
-First, I must change the fixed batch size. After training, I want to feed just one sentence into my Network to make it continue the character sequence. I will feed a string into the model, make it predict the next character, update the input sequence, and repeat the process until a long generated text is obtained. Because of this, the succession of input sequences is now different from training session, in which portions of text were sampled randomly. I now have to set `stateufl = True` in the `LSTM()` layer, so that each LSTM cell will keep in memory the internal state from the previous sequence. With this I hope the model will better remember sequential information while generating text.
-
-I will instantiate a new `generator` RNN with these new features, and transfer the trained weights of my `RNN` into it.
-"""
-
-generator = Sequential([
-   Embedding(vocab_size, embedding_size,
-              batch_input_shape=(1, None)),
-    Dense(embedding_size, activation = relu),
-    
-    LSTM(len_input, return_sequences = True, stateful=1),
-
-    Dropout(0.3),
-    
-    Dense(hidden_size, activation = relu), 
-
-    Dropout(0.3),
-
-    LSTM(len_input, return_sequences = True, stateful=1),
-    
-    Dense(vocab_size)
-])
-
-generator.summary()
-
 # Import trained weights from RNN to generator
 generator.set_weights(RNN.get_weights())
 
@@ -724,8 +540,6 @@ def generate_text(start_string, num_generate = 1000, temperature = 1.0):
         
     return (start_string + ''.join(text_generated))
 
-"""(This function is based on [this tutorial](https://www.tensorflow.org/tutorials/text/text_generation).)"""
-
 # Let's feed the first lines:
 start_string = """
 Nel mezzo del cammin di nostra vita
@@ -736,7 +550,7 @@ chè la diritta via era smarrita.
 
 for t in [0.1, 0.5, 1.0, 1.5, 2]:
     print("####### TEXT GENERATION - temperature = {}\n".format(t))
-    print(generate_text(start_string = start_string, num_generate = 1000, temperature = 1.0))
+    print(generate_text(start_string = start_string, num_generate = 1000, temperature = t))
     print("\n\n\n")
 
 """The best generation is, IMHO, the one with `temperature = 1.5`. The sentences of course do not make sense, but it's amazing that such a simple model could achieve similar results, and generate absolutely Dante-esque text with just ~40 minutes of GPU training.
