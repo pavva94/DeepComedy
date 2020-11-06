@@ -468,8 +468,7 @@ def train_on_batch(x, y):
         current_loss = tf.reduce_mean(
             tf.keras.losses.sparse_categorical_crossentropy(
                 y, model(x), from_logits = True)
-            + get_custom_loss(x, y)
-            )
+            ) + get_custom_loss(x, y)
     gradients = tape.gradient(current_loss, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     return current_loss
