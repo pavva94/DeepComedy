@@ -434,7 +434,7 @@ embedded = Embedding(vocab_size, embedding_size,
                      embeddings_regularizer=tf.keras.regularizers.L1L2()
                      )(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=1024,
+encoder_output, hidden_state, cell_state = LSTM(units=2048,
                                                          return_sequences=True,
                                                          return_state=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
@@ -445,10 +445,10 @@ encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
 initial_state = [hidden_state, cell_state]
 
-# initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=1024,
+initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
+encoder_output, hidden_state, cell_state = LSTM(units=4096,
                                                          return_sequences=True,
-                                                         return_state=True)(encoder_output, initial_state=initial_state)
+                                                         return_state=True)(encoder_output, initial_state=initial_state_double)
 encoder_output = Dropout(0.3)(encoder_output)
 #encoder_output = Flatten()(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
@@ -501,7 +501,9 @@ for epoch in range(n_epochs):
     print("{}.  \t  Loss: {}  \t  Time: {}sec/epoch".format(
         epoch+1, current_loss.numpy(), round(time.time()-start, 2)))
 
-model.save("model_custom_loss_00.h5")
+model.save("model_custom_loss_01.h5")
+from google.colab import files
+files.download('model_custom_loss_01.h5')
 
 '''
 EXPERIMENT
@@ -514,7 +516,7 @@ X = Input(shape=(None, ), batch_size=1)  # 100 is the number of features
 # Word-Embedding Layer
 embedded = Embedding(vocab_size, embedding_size)(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=1024,
+encoder_output, hidden_state, cell_state = LSTM(units=2048,
                                                          return_sequences=True,
                                                          return_state=True,
                                               stateful=True)(embedded)
@@ -527,11 +529,11 @@ encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 # encoder_output = Attention()(attention_input, training=True)
 initial_state = [hidden_state,  cell_state]
 
-# initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=1024,
+initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
+encoder_output, hidden_state, cell_state = LSTM(units=4096,
                                                          return_sequences=True,
                                                          return_state=True,
-                                                stateful=True)(encoder_output, initial_state=initial_state)
+                                                stateful=True)(encoder_output, initial_state=initial_state_double)
 #encoder_output = Flatten()(encoder_output)
 encoder_output = Dropout(0.3)(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
