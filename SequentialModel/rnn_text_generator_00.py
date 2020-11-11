@@ -37,8 +37,6 @@ from matplotlib import pyplot as plt
 #from google.colab import drive
 #drive.mount('/content/drive')
 
-current_path = " [...] /TF_2.0/NLP/text_generator/"
-
 # Read the Divina Commedia
 with open( "DivinaCommedia.txt", 'r', encoding="utf8") as file:
     divina_commedia = file.read()
@@ -181,10 +179,115 @@ print(text_matrix[ 180, : ])
 Evaluate the structure of the rhymes, based on the real scheme
 """
 
+x = [[49, 46, 36, 44, 49, 32, 48, 36,  1, 45,  1, 35, 51, 36,  1, 45,  1, 50,
+ 48, 36,  1, 46, 36, 48,  1, 49, 36, 30,  5,  0, 44, 45, 44,  1, 42, 32,
+  1, 37, 45, 48, 50, 51, 44, 32,  1, 35, 40,  1, 46, 48, 40, 43, 32,  1,
+ 52, 32, 34, 32, 44, 50, 36,  5,  0, 44, 45, 44,  1, 35, 36, 34, 40, 43,
+ 32, 49,  5,  1, 47, 51, 32, 36,  1, 49, 51, 44, 50,  1, 46, 32, 51, 46,
+ 36, 48, 51, 43,  1, 14, 36, 40,  5,  1,  0,  0, 32, 35, 35, 40, 43, 32,
+ 44, 35, 60,  5,  1, 43, 32,  1, 34, 45, 44, 50, 48, 45,  1, 32, 42,  1,
+ 43, 45, 44, 35, 45,  1, 36, 48, 48, 32, 44, 50, 36,  0, 42, 40, 34, 36,
+ 44, 55, 32,  1, 35, 40], 
+ [42,  1, 34, 45, 44, 49, 40, 38, 42, 40, 45,  1, 44, 36, 42,  1, 47, 51,
+ 32, 42, 36,  1, 45, 38, 44, 36,  1, 32, 49, 46, 36, 50, 50, 45,  0, 34,
+ 48, 36, 32, 50, 45,  1, 58,  1, 52, 40, 44, 50, 45,  1, 46, 48, 40, 32,
+  1, 34, 39, 36,  1, 52, 32, 35, 32,  1, 32, 42,  1, 37, 45, 44, 35, 45,
+  5,  1,  0,  0, 46, 36, 48, 60,  1, 34, 39, 36,  1, 32, 44, 35, 32, 49,
+ 49, 36,  1, 52, 36, 48,  4,  1, 42, 45,  1, 49, 51, 45,  1, 35, 40, 42,
+ 36, 50, 50, 45,  0, 42, 32,  1, 49, 46, 45, 49, 32,  1, 35, 40,  1, 34,
+ 45, 42, 51, 40,  1, 34, 39,  4, 32, 35,  1, 32, 42, 50, 36,  1, 38, 48,
+ 40, 35, 32,  0, 35, 40,]]
+y = [[46, 36, 44, 49, 32, 48, 36,  1, 45,  1, 35, 51, 36,  1, 45,  1, 50, 48,
+ 36,  1, 46, 36, 48,  1, 49, 36, 40,  5,  0, 44, 45, 44,  1, 42, 32,  1,
+ 37, 45, 48, 50, 51, 44, 32,  1, 35, 40,  1, 46, 48, 40, 43, 32,  1, 52,
+ 32, 34, 32, 44, 50, 36,  5,  0, 44, 45, 44,  1, 35, 36, 34, 40, 43, 32,
+ 49,  5,  1, 47, 51, 32, 36,  1, 49, 51, 44, 50,  1, 46, 32, 51, 46, 36,
+ 48, 51, 43,  1, 14, 36, 40,  5,  1,  0,  0, 32, 35, 35, 40, 43, 32, 44,
+ 35, 60,  5,  1, 43, 32,  1, 34, 45, 44, 50, 48, 45,  1, 32, 42,  1, 43,
+ 45, 44, 35, 45,  1, 36, 48, 48, 32, 44, 50, 36,  0, 42, 40, 34, 36, 44,
+ 55, 32,  1, 35, 40,  1], [ 1, 34, 45, 44, 49, 40, 38, 42, 40, 45,  1, 44, 36, 42,  1, 47, 51, 32,
+ 42, 36,  1, 45, 38, 44, 36,  1, 32, 49, 46, 36, 50, 50, 45,  0, 34, 48,
+ 36, 32, 50, 45,  1, 58,  1, 52, 40, 44, 50, 45,  1, 46, 48, 40, 32,  1,
+ 34, 39, 36,  1, 52, 32, 35, 32,  1, 32, 42,  1, 37, 45, 44, 35, 45,  5,
+  1,  0,  0, 46, 36, 48, 60,  1, 34, 39, 36,  1, 32, 44, 35, 32, 49, 49,
+ 36,  1, 52, 36, 48,  4,  1, 42, 45,  1, 49, 51, 45,  1, 35, 40, 42, 36,
+ 50, 50, 45,  0, 42, 32,  1, 49, 46, 45, 49, 32,  1, 35, 40,  1, 34, 45,
+ 42, 51, 40,  1, 34, 39,  4, 32, 35,  1, 32, 42, 50, 36,  1, 38, 48, 40,
+ 35, 32,  0, 35, 40, 49,] ]
+
+
+custom_loss = get_custom_loss(x,y)
+print(custom_loss)
+
+#@title
+
+def get_custom_loss(x_batch, y_batch):
+
+  summed_custom_loss = 0
+  # x_batch ha lo shape (200, 200) quindi ho 200 vettori con 200 lettere ognuno
+  # le 200 lettere sono le feature
+
+  # scorro i 200 vettori
+  # for (x, y) in zip(x_batch, y_batch):
+  for v in range(len(x_batch)):
+    x = x_batch[v]
+    y = y_batch[v]
+
+    # dividio il vettore in versi utili
+    x_divided = divide_versi(x)
+    y_divided = divide_versi(y)
+    # print(x_divided)
+    # print(y_divided)
+
+    # assicuro che il numero di versi siano uguali
+    # !!! non posso perchè il generato può avere errori e quindi, per esempio,
+    # avere più versi
+    # assert len(x_divided) == len(y_divided)
+
+    # estraggo lo schema di rime
+    x_rhymes = rhymes_extractor(x_divided)
+    y_rhymes = rhymes_extractor(y_divided)
+    # print(x_rhymes)
+    # print(y_rhymes)
+    # mi ritora una lista con il numero delle righe che fanno rima
+    # Esempio: [(1,3), (2,4)] significa che le righe 1 e 3 fanno rima e che le 
+    # righe 2 e 4 pure 
+    # TODO se avessimo due terzine intere si potrebbe valutare rime a 3 righe [aBaBcB]
+
+    if x_rhymes == []:
+      return 0.9  # max custom loss
+    
+    # se lo schema di rime del generato e di dante è uguale stop
+    if x_rhymes == y_rhymes:
+      return -0.2
+
+    custom_loss = 0.
+
+    # per ogni coppia di righe che fanno rima nel generato controllo che la 
+    # stessa coppia di righe faccia rima in quello di dante
+    for i in range(len(x_rhymes)):
+      if x_rhymes[i] not in y_rhymes:
+        custom_loss += 0.15
+
+    # se il numero di rime del generato è minore di quello reale allora aumenta la loss
+    if len(y_rhymes) - len(x_rhymes) > 0:
+      custom_loss += 0.15 * (len(y_rhymes) - len(x_rhymes))
+
+
+    # sommo la loss per tutti i 200 vettori
+    summed_custom_loss += custom_loss
+  
+  # faccio una media sulla loss totale
+  # print(summed_custom_loss/x_batch.shape[0])
+  return summed_custom_loss/x_batch.shape[0]
+
 '''
 EXPERIMENT
 CUSTOM LOSS
 '''
+from functools import reduce
+
+
 def divide_versi(y):
   doppiozero = False
 
@@ -194,9 +297,9 @@ def divide_versi(y):
 
     # devo pulire la lista dai segni di punteggiatura, 
     # in chartoidx significa i numeri da 1 a 10 compresi.
-    if ly in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:  #non posso perchè con i Tensor non funziona
+    if ly in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:  # con i Tensor non funziona
     # if ly is 1 or ly is 2 or ly is 3 or ly is 4 or ly is 5 or ly is 6 or ly is 7 \
-    #    or ly is 8 or ly is 9 or ly is 10:
+    #     or ly is 8 or ly is 9 or ly is 10:
         continue
     else:
       # se è zero vuol dire \n quindi aggiungo una nuova riga
@@ -214,7 +317,9 @@ def divide_versi(y):
       # dato che l'ultima riga non finisce con 0 vuol dire che è incompleta e la rimuovo
       y_divided.pop()
 
-    if len(y_divided[0]) < 4:
+  # i need to re check because maybe i pop the only one
+  if len(y_divided) != 0:
+    if len(y_divided[0]) < 3:
       # se la prima riga è minore di 4 non posso farci nulla quindi la elimino
       y_divided.pop(0)
 
@@ -256,14 +361,23 @@ def get_custom_loss(x_batch, y_batch):
   # x_batch ha lo shape (200, 200) quindi ho 200 vettori con 200 lettere ognuno
   # le 200 lettere sono le feature
 
-  x_bin_tot = np.ones(1)
-  y_bin_tot = np.ones(1)
+  # max numero di rime possibili (arbitrario)
+  max_ryhmes = 4
+
+  x_bin_tot = np.ones(shape=(len(x_batch), max_ryhmes), dtype='float32')
+  y_bin_tot = np.ones(shape=(len(x_batch), max_ryhmes), dtype='float32')
 
   # scorro i 200 vettori
   # for (x, y) in zip(x_batch, y_batch):  # Non funziona con i tensori
   for v in range(len(x_batch)):
     x = x_batch[v]
     y = y_batch[v]
+
+    # given that the model returns a matrix with shape (150, 62) with the probability
+    # for each of the 62 character i need to use a categorical to choose the best
+    # then flatten the matrix into a list for evaluating
+    predicted_text = list(tf.random.categorical(x, num_samples=1).numpy())
+    x = np.concatenate(predicted_text).ravel().tolist()
 
     # dividio il vettore in versi utili
     x_divided = divide_versi(x)
@@ -283,30 +397,28 @@ def get_custom_loss(x_batch, y_batch):
     # righe 2 e 4 pure 
     # TODO se avessimo due terzine intere si potrebbe valutare rime a 3 righe [aBaBcB]
 
-    if x_rhymes == []:
-      return 0.9  # max custom loss
-    
-    # se lo schema di rime del generato e di dante è uguale stop
-    if x_rhymes == y_rhymes:
-      return -0.2
-
     # creo un vettore di 1 per la y perchè le rime ci sono sempre
-    y_bin = np.ones(len(y_rhymes))
+    y_bin = np.ones(max_ryhmes, dtype='float32')
     # creo un vettore di 0 per le rime generate, metterò 1 se la rima 
     # corrispondente è valida (cioè in dante)
-    x_bin = np.zeros(len(y_rhymes))
+    x_bin = np.ones(max_ryhmes, dtype='float32')
+
+    if x_rhymes == []:
+      x_bin = np.zeros(max_ryhmes, dtype='float32')
 
     # se la rima generata è nelle rime originali di Dante allora la segno come valida
-    for i in range(len(y_rhymes)):
-      if y_rhymes[i] in x_rhymes:
-        x_bin[i] = 1
-
+    for i in range(len(x_rhymes)):
+      if x_rhymes[i] not in y_rhymes:
+        x_bin[i] = 0
+      
     # concateno i vettori con l'encoding delle rime
-    x_bin_tot = np.concatenate((x_bin_tot, x_bin))
-    y_bin_tot = np.concatenate((y_bin_tot, y_bin))
+    x_bin_tot[v] = x_bin
+    y_bin_tot[v] = y_bin
+
+  r = tf.keras.losses.mean_squared_error(y_bin_tot, x_bin_tot)
 
   # MSE sui vettori
-  return tf.keras.losses.mean_squared_error(y_bin_tot, x_bin_tot)
+  return np.mean(r)
 
 # NEW VERSION
 # creo un vettore con le rime di y reale e di y generato
