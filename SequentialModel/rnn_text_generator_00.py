@@ -163,7 +163,8 @@ def get_text_matrix(sequence, len_input):
         
     return X
 
-text_matrix = get_text_matrix(encoded_text, 100)
+len_text = 150
+text_matrix = get_text_matrix(encoded_text, len_text)
 
 print(text_matrix.shape)
 
