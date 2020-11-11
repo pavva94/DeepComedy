@@ -523,11 +523,11 @@ X = Input(shape=(None, ), batch_size=batch_size)  # 100 is the number of feature
 # Word-Embedding Layer
 embedded = Embedding(vocab_size, embedding_size, 
                      batch_input_shape=(batch_size, None), 
-                     embeddings_initializer=tf.keras.initializers.GlorotNormal(), 
+                     # embeddings_initializer=tf.keras.initializers.RandomNormal(), 
                      embeddings_regularizer=tf.keras.regularizers.L1L2()
                      )(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_1,
                                                          return_sequences=True,
                                                          return_state=True)(embedded)
 #attention_input = [encoder_output, hidden_state]
@@ -539,7 +539,7 @@ encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 initial_state = [hidden_state, cell_state]
 
 initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=4096,
+encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_2,
                                                          return_sequences=True,
                                                          return_state=True)(encoder_output, initial_state=initial_state_double)
 encoder_output = Dropout(0.3)(encoder_output)
@@ -555,13 +555,17 @@ print(model.summary())
 
 # This is an Autograph function
 # its decorator makes it a TF op - i.e. much faster
-# @tf.function
+#@tf.function
 def train_on_batch(x, y):
     with tf.GradientTape() as tape:
-        current_loss = tf.reduce_mean(
-            tf.keras.losses.sparse_categorical_crossentropy(
-                y, model(x), from_logits = True)
-            ) + get_custom_loss(x, y)
+        # returns a tensor with shape (batch_size, len_text)
+        x_predicted = model(x)
+        scce = tf.keras.losses.sparse_categorical_crossentropy(y, x_predicted, from_logits = True)
+        
+        # we cant return a tensor with that shape so we return a float that are summed
+        custom = get_custom_loss(x_predicted, y)
+        current_loss = tf.reduce_mean(scce + custom)
+        
     gradients = tape.gradient(current_loss, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     return current_loss
@@ -578,7 +582,7 @@ for epoch in range(n_epochs):
     sample_target = text_matrix[ sample+1 , : ]
 
 
-    #sample = list(range(subset_size*epoch, subset_size*(epoch+1)))
+    #sample = list(range(su bset_size*epoch, subset_size*(epoch+1)))
     #sample_train = text_matrix[ sample , : ]
     #next_sample = [x+1 for x in sample]
     #sample_target = text_matrix[ next_sample , : ]
@@ -622,7 +626,7 @@ X = Input(shape=(None, ), batch_size=1)  # 100 is the number of features
 # Word-Embedding Layer
 embedded = Embedding(vocab_size, embedding_size)(X)
 embedded = Dense(embedding_size, relu)(embedded)
-encoder_output, hidden_state, cell_state = LSTM(units=2048,
+encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_1,
                                                          return_sequences=True,
                                                          return_state=True,
                                               stateful=True)(embedded)
@@ -636,7 +640,7 @@ encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 initial_state = [hidden_state,  cell_state]
 
 initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
-encoder_output, hidden_state, cell_state = LSTM(units=4096,
+encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_2,
                                                          return_sequences=True,
                                                          return_state=True,
                                                 stateful=True)(encoder_output, initial_state=initial_state_double)
@@ -652,7 +656,7 @@ generator.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits
 print(model.summary())
 
 # Import trained weights from RNN to generator
-generator.set_weights(RNN.get_weights())
+generator.set_weights(model.get_weights())
 
 def generate_text(start_string, num_generate = 1000, temperature = 1.0):
     
