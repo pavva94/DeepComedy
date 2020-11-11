@@ -440,29 +440,35 @@ The Network is structured to be fed with batches of data of fixed size.
 vocab_size = len(char2idx)
 
 # size of mini batches during training
-batch_size = 200  # 100
+batch_size = 100  # 100
 
 # size of training subset at each epoch
 subset_size = batch_size * 100
 
 # vector size of char embeddings
-embedding_size = 300  # 250
+embedding_size = 200  # 250
 
-len_input = 2048   # 200
+lstm_unit_1 = 2048
+lstm_unit_2 = 4096
+
+# debug model
+debug_model = True
+if debug_model:
+  lstm_unit_1 = 1024
+  lstm_unit_2 = 2048
+
 
 hidden_size = 300  # for Dense() layers 250
 
 n_epochs = 50
 
-# learning_rate = 0.001  # 0.0001
+learning_rate = 0.001  # 0.0001
 
-'''
-EXPERIMENT
-MODEL
-'''
+"""## Custom learning rate"""
 
+#learning_rate_tot = []
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-  def __init__(self, d_model, warmup_steps=15):
+  def __init__(self, d_model, warmup_steps=10):
     super(CustomSchedule, self).__init__()
 
     self.d_model = d_model
@@ -471,13 +477,34 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     self.warmup_steps = warmup_steps
 
   def __call__(self, step):
-    arg1 = tf.math.rsqrt(step)
-    arg2 = step * (self.warmup_steps ** -1.5)
+    arg1 = tf.math.rsqrt(step ** 1.5)
+    arg2 = step * ((self.warmup_steps+10) ** -1.3)
+    lr = tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
-    return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+    print(step)
 
-d_model = 128
-learning_rate = CustomSchedule(d_model)
+    return lr
+
+d_model = 500
+# learning_rate = CustomSchedule(d_model)
+#plt.plot(learning_rate(tf.range(50, dtype=tf.float32)))
+plt.ylabel("Learning Rate")
+plt.xlabel("Train Step")
+
+
+learning_rate = tf.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate=1e-3,
+    decay_steps=15,
+    decay_rate=0.80,
+    staircase=True)
+plt.plot(learning_rate(tf.range(50, dtype=tf.float32)))
+plt.ylabel("Learning Rate")
+plt.xlabel("Train Step")
+
+'''
+EXPERIMENT
+MODEL
+'''
 
 optimizer = tf.keras.optimizers.Adamax(learning_rate=learning_rate)  # Adam
 
