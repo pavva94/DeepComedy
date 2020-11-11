@@ -179,6 +179,9 @@ print(text_matrix[ 180, : ])
 Evaluate the structure of the rhymes, based on the real scheme
 """
 
+#@title
+#@DEBUG CUSTOM LOSS
+
 x = [[49, 46, 36, 44, 49, 32, 48, 36,  1, 45,  1, 35, 51, 36,  1, 45,  1, 50,
  48, 36,  1, 46, 36, 48,  1, 49, 36, 30,  5,  0, 44, 45, 44,  1, 42, 32,
   1, 37, 45, 48, 50, 51, 44, 32,  1, 35, 40,  1, 46, 48, 40, 43, 32,  1,
@@ -215,71 +218,188 @@ y = [[46, 36, 44, 49, 32, 48, 36,  1, 45,  1, 35, 51, 36,  1, 45,  1, 50, 48,
  42, 51, 40,  1, 34, 39,  4, 32, 35,  1, 32, 42, 50, 36,  1, 38, 48, 40,
  35, 32,  0, 35, 40, 49,] ]
 
+'''
+EXPERIMENT
+CUSTOM LOSS
+'''
+from functools import reduce
 
-custom_loss = get_custom_loss(x,y)
-print(custom_loss)
 
-#@title
+def divide_versi(y):
+  doppiozero = False
+
+  y_divided = [[]]
+  for ly in y:
+    ly = int(ly)
+
+    # devo pulire la lista dai segni di punteggiatura, 
+    # in chartoidx significa i numeri da 1 a 10 compresi.
+    if ly in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:  # con i Tensor non funziona
+    # if ly is 1 or ly is 2 or ly is 3 or ly is 4 or ly is 5 or ly is 6 or ly is 7 \
+    #     or ly is 8 or ly is 9 or ly is 10:
+        continue
+    else:
+      # se è zero vuol dire \n quindi aggiungo una nuova riga
+      if ly is 0:
+        if not doppiozero:
+          y_divided.append([])
+        doppiozero = True
+        continue
+
+      y_divided[-1].append(ly)
+      doppiozero = False
+
+  if y_divided is not []:
+    if y[-1] != 0:
+      # dato che l'ultima riga non finisce con 0 vuol dire che è incompleta e la rimuovo
+      y_divided.pop()
+
+  # i need to re check because maybe i pop the only one
+  if len(y_divided) != 0:
+    if len(y_divided[0]) < 3:
+      # se la prima riga è minore di 4 non posso farci nulla quindi la elimino
+      y_divided.pop(0)
+
+  return y_divided
+
+def rhymes_extractor(y_divided):
+  # estraggo lo schema di rime da y
+  rhymes = []
+  for i in range(len(y_divided)):
+    # con la fine del verso (ultime due lettere) controllo se le altre righe 
+    # finiscono con le stesse lettere
+    vy = y_divided[i]
+
+    last_word_1 = vy[-2:]
+
+    # ABA BCB CDC
+
+    # devo controllare se la riga i fa rima con la riga i+2 
+    if i+2 < len(y_divided):
+      next_vy = y_divided[i+2]
+      # print(vy[-2:])
+      # print(next_vy[-2:])
+      if last_word_1 == next_vy[-2:]:
+        rhymes.append((i, i+2))
+    
+    if i+4 < len(y_divided):
+      # print(vy[-2:])
+      # print(next_vy[-2:])
+      next_vy = y_divided[i+4]
+      if last_word_1 == next_vy[-2:]:
+        rhymes.append((i, i+4))
+
+  # print(rhymes)
+  return rhymes
+
 
 def get_custom_loss(x_batch, y_batch):
-
   summed_custom_loss = 0
   # x_batch ha lo shape (200, 200) quindi ho 200 vettori con 200 lettere ognuno
   # le 200 lettere sono le feature
 
+  # max numero di rime possibili (arbitrario)
+  max_rhymes = 4
+
+  print("Shape di x_batch e y_batch")
+  print((len(x_batch), len(x_batch[0])))
+  print((len(y_batch), len(y_batch[0])))
+
+  x_bin_tot = np.ones(shape=(len(x_batch), max_rhymes), dtype='float32')
+  y_bin_tot = np.ones(shape=(len(x_batch), max_rhymes), dtype='float32')
+
   # scorro i 200 vettori
-  # for (x, y) in zip(x_batch, y_batch):
+  # for (x, y) in zip(x_batch, y_batch):  # Non funziona con i tensori
   for v in range(len(x_batch)):
     x = x_batch[v]
     y = y_batch[v]
 
+    # given that the model returns a matrix with shape (150, 62) with the probability
+    # for each of the 62 character i need to use a categorical to choose the best
+    # then flatten the matrix into a list for evaluating
+    predicted_text = list(tf.random.categorical(x, num_samples=1).numpy())
+    x = np.concatenate(predicted_text).ravel().tolist()
+
     # dividio il vettore in versi utili
     x_divided = divide_versi(x)
     y_divided = divide_versi(y)
-    # print(x_divided)
-    # print(y_divided)
+
+    print("Divisione in versi di x_batch e y_batch")
+    print(x_divided)
+    print(y_divided)
 
     # assicuro che il numero di versi siano uguali
     # !!! non posso perchè il generato può avere errori e quindi, per esempio,
-    # avere più versi
+    # avere più o meno versi
     # assert len(x_divided) == len(y_divided)
 
     # estraggo lo schema di rime
     x_rhymes = rhymes_extractor(x_divided)
     y_rhymes = rhymes_extractor(y_divided)
-    # print(x_rhymes)
-    # print(y_rhymes)
-    # mi ritora una lista con il numero delle righe che fanno rima
+
+    print("Rime dei versi di x_batch e y_batch")
+    print(x_rhymes)
+    print(y_rhymes)
+
+    # mi ritorna una lista con il numero delle righe che fanno rima
     # Esempio: [(1,3), (2,4)] significa che le righe 1 e 3 fanno rima e che le 
     # righe 2 e 4 pure 
     # TODO se avessimo due terzine intere si potrebbe valutare rime a 3 righe [aBaBcB]
 
+    # creo un vettore di 1 per la y perchè le rime ci sono sempre
+    y_bin = np.ones(max_rhymes, dtype='float32')
+    # creo un vettore di 1 per le rime generate, metterò 0 se la rima 
+    # NON è presente in dante, abbuono con uno 0.5 visto che c'è la rima almeno
+    x_bin = np.ones(max_rhymes, dtype='float32')
+
     if x_rhymes == []:
-      return 0.9  # max custom loss
-    
-    # se lo schema di rime del generato e di dante è uguale stop
-    if x_rhymes == y_rhymes:
-      return -0.2
+      x_bin = np.zeros(max_rhymes, dtype='float32')
 
-    custom_loss = 0.
+    # se la rima generata è nelle rime originali di Dante allora la segno come valida
+    # tengo massimo max_ryhmes rime: posso perchè in 150-200 caratteri non ho più di 5-6 righe
+    # quindi in Dante avrei 2 rime, eccedo di 2 per aiutare la rete a creare rime anche sbagliate
+    for i in range(max_rhymes+1):
+      if i < len(x_rhymes):
+        if y_rhymes[i] not in x_rhymes:
+          x_bin[i] = 0.
+        if x_rhymes[i] not in y_rhymes:
+          x_bin[i] = 0.5
 
-    # per ogni coppia di righe che fanno rima nel generato controllo che la 
-    # stessa coppia di righe faccia rima in quello di dante
-    for i in range(len(x_rhymes)):
-      if x_rhymes[i] not in y_rhymes:
-        custom_loss += 0.15
+    print("Vettore che rappresenta il confronto delle rime tra il generato e Dante dei versi di x_batch e y_batch \n y è sempre 1 mentre il generato ha 1 se la rima c'è in dante o 0.5 se non c'è ")
+    print(x_bin)
+    print(y_bin)
+      
+    # concateno i vettori con l'encoding delle rime
+    x_bin_tot[v] = x_bin
+    y_bin_tot[v] = y_bin
 
-    # se il numero di rime del generato è minore di quello reale allora aumenta la loss
-    if len(y_rhymes) - len(x_rhymes) > 0:
-      custom_loss += 0.15 * (len(y_rhymes) - len(x_rhymes))
+  print("Matrice dei vettori su cui eseguo la MSE: (x,y)")
+  print(x_bin_tot)
+  print(y_bin_tot)
+  r = tf.keras.losses.mean_squared_error(y_bin_tot, x_bin_tot)
+
+  print("Risultato della MSE:")
+  print(r)
+
+  print("Loss finale fatta con la media della MSE")
+  print(np.mean(r))
+  # MSE sui vettori
+  return np.mean(r)
 
 
-    # sommo la loss per tutti i 200 vettori
-    summed_custom_loss += custom_loss
-  
-  # faccio una media sulla loss totale
-  # print(summed_custom_loss/x_batch.shape[0])
-  return summed_custom_loss/x_batch.shape[0]
+
+debug_loss = True
+custom_loss = get_custom_loss(x,y)
+print(custom_loss)
+
+# NEW VERSION
+# creo un vettore con le rime di y reale e di y generato
+# Ex: in y reale se ho ABABC il vettore è [1,2,1,2,3] con o zero ad indicare nulla
+# per y generato devo creare un vettore di lunghezza uguale per poi valutarlo con una sparse_crossentropy
+# problema: non avrà mai le stesse righe
+
+# extract matrix of index of where the zeros are
+#tf.map_fn(fn=lambda t: t.map_fn(fn=lambda x: 1 if x == 0 else 0), elems=x_batch)
 
 '''
 EXPERIMENT
