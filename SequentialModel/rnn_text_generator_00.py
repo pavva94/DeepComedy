@@ -31,7 +31,7 @@ from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Attention, 
 from tensorflow.keras.activations import elu, relu, softmax
 from tensorflow.keras.metrics import categorical_accuracy, sparse_categorical_crossentropy, categorical_crossentropy
 
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt 
 
 # Read file from Colab Notebook
 #from google.colab import drive
@@ -482,10 +482,10 @@ def get_custom_loss(x_batch, y_batch):
   # le 200 lettere sono le feature
 
   # max numero di rime possibili (arbitrario)
-  max_ryhmes = 4
+  max_rhymes = 4
 
-  x_bin_tot = np.ones(shape=(len(x_batch), max_ryhmes), dtype='float32')
-  y_bin_tot = np.ones(shape=(len(x_batch), max_ryhmes), dtype='float32')
+  x_bin_tot = np.ones(shape=(len(x_batch), max_rhymes), dtype='float32')
+  y_bin_tot = np.ones(shape=(len(x_batch), max_rhymes), dtype='float32')
 
   # scorro i 200 vettori
   # for (x, y) in zip(x_batch, y_batch):  # Non funziona con i tensori
@@ -518,18 +518,23 @@ def get_custom_loss(x_batch, y_batch):
     # TODO se avessimo due terzine intere si potrebbe valutare rime a 3 righe [aBaBcB]
 
     # creo un vettore di 1 per la y perchè le rime ci sono sempre
-    y_bin = np.ones(max_ryhmes, dtype='float32')
-    # creo un vettore di 0 per le rime generate, metterò 1 se la rima 
-    # corrispondente è valida (cioè in dante)
-    x_bin = np.ones(max_ryhmes, dtype='float32')
+    y_bin = np.ones(max_rhymes, dtype='float32')
+    # creo un vettore di 1 per le rime generate, metterò 0 se la rima 
+    # NON è presente in dante, abbuono con uno 0.5 visto che c'è la rima almeno
+    x_bin = np.ones(max_rhymes, dtype='float32')
 
     if x_rhymes == []:
-      x_bin = np.zeros(max_ryhmes, dtype='float32')
+      x_bin = np.zeros(max_rhymes, dtype='float32')
 
     # se la rima generata è nelle rime originali di Dante allora la segno come valida
-    for i in range(len(x_rhymes)):
-      if x_rhymes[i] not in y_rhymes:
-        x_bin[i] = 0
+    # tengo massimo max_ryhmes rime: posso perchè in 150-200 caratteri non ho più di 5-6 righe
+    # quindi in Dante avrei 2 rime, eccedo di 2 per aiutare la rete a creare rime anche sbagliate
+    for i in range(max_rhymes+1):
+      if i < len(y_rhymes):
+        if y_rhymes[i] not in x_rhymes:
+          x_bin[i] = 0.
+        if i < len(x_rhymes) and x_rhymes[i] not in y_rhymes:
+          x_bin[i] = 0.5
       
     # concateno i vettori con l'encoding delle rime
     x_bin_tot[v] = x_bin
@@ -571,8 +576,8 @@ embedding_size = 200  # 250
 lstm_unit_1 = 2048
 lstm_unit_2 = 4096
 
-# debug model
-debug_model = True
+# debug variables
+debug_model = False
 if debug_model:
   lstm_unit_1 = 1024
   lstm_unit_2 = 2048
@@ -586,6 +591,7 @@ learning_rate = 0.001  # 0.0001
 
 """## Custom learning rate"""
 
+#@title
 #learning_rate_tot = []
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
   def __init__(self, d_model, warmup_steps=10):
@@ -606,7 +612,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     return lr
 
 d_model = 500
-# learning_rate = CustomSchedule(d_model)
+#learning_rate = CustomSchedule(d_model)
 #plt.plot(learning_rate(tf.range(50, dtype=tf.float32)))
 plt.ylabel("Learning Rate")
 plt.xlabel("Train Step")
@@ -681,7 +687,7 @@ def train_on_batch(x, y):
         # returns a tensor with shape (batch_size, len_text)
         x_predicted = model(x)
         scce = tf.keras.losses.sparse_categorical_crossentropy(y, x_predicted, from_logits = True)
-        
+
         # we cant return a tensor with that shape so we return a float that are summed
         custom = get_custom_loss(x_predicted, y)
         current_loss = tf.reduce_mean(scce + custom)
