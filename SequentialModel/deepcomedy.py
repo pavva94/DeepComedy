@@ -487,15 +487,15 @@ files.download('deep_comedy_custom_loss_01.h5')
 fig, ax1 = plt.subplots()
 
 color = 'tab:red'
-ax1.set_xlabel('time (s)')
-ax1.set_ylabel('exp', color=color)
+ax1.set_xlabel('Iterations')
+ax1.set_ylabel('Total Loss', color=color)
 ax1.plot(loss_history, color=color)
 ax1.tick_params(axis='y', labelcolor=color)
 
 ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
 color = 'tab:blue'
-ax2.set_ylabel('sin', color=color)  # we already handled the x-label with ax1
+ax2.set_ylabel('Custom Loss', color=color)  # we already handled the x-label with ax1
 ax2.plot(custom_loss_history, color=color)
 ax2.tick_params(axis='y', labelcolor=color)
 
