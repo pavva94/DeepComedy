@@ -475,7 +475,7 @@ for epoch in range(n_epochs):
         loss_history.append(current_loss)
         custom_loss_history.append(custom)
     
-    print("{}.  \t  Total-Loss: {%.2f}  \t  Custom-Loss: {%.2f}  \t Time: {} sec/epoch".format(
+    print("{}.  \t  Total-Loss: {}  \t  Custom-Loss: {}  \t Time: {} sec/epoch".format(
         epoch+1, current_loss.numpy(),custom, round(time.time()-start, 2)))
 
 model.save("deep_comedy_custom_loss_01.h5")
