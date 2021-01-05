@@ -572,6 +572,7 @@ def generate_text(start_string, model, num_generate = 1000, temperature = 1.0):
     input_eval = tf.expand_dims(input_eval, 0)
     
     text_generated = [] # List to append predicted chars 
+    predicted_ids = []
     
     idx2char = { v: k for k, v in char2idx.items() }  # invert char-index mapping
     
@@ -585,7 +586,14 @@ def generate_text(start_string, model, num_generate = 1000, temperature = 1.0):
         predictions = predictions / temperature
         predicted_id = tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
         
-        input_eval = tf.expand_dims([predicted_id], 0)
+        input_eval = tf.expand_dims([predicted_id], 0)  # one letter input
+        
+        # build the input for the next iteration, based on the last 5 characters generated
+        # become like a poetry!
+        #predicted_ids.append(predicted_id)
+        #if len(predicted_ids) > 5:
+        #  predicted_ids = predicted_ids[1:]
+        #input_eval = tf.expand_dims(predicted_ids, 0)
 
         text_generated.append(idx2char[predicted_id])
         
