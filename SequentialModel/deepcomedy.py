@@ -444,6 +444,8 @@ print(model.summary())
 
 """## Training"""
 
+min_custom_loss = 1.0
+
 def train_on_batch(x, y):
     with tf.GradientTape() as tape:
         # returns a tensor with shape (batch_size, len_text)
@@ -457,11 +459,17 @@ def train_on_batch(x, y):
 
     gradients = tape.gradient(current_loss, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+    # checking for the best model using custom loss
+    if custom_loss < min_custom_loss:
+      min_custom_loss = custom_loss
+      model.save("best_model.h5", overwrite=True)
     return current_loss, scce, custom
 
 
 loss_history = []
 custom_loss_history = []
+
 
 for epoch in range(n_epochs):
     
