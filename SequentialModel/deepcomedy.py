@@ -377,7 +377,7 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 d_model = 500
 learning_rate_custom_1 = CustomSchedule(d_model)
-plt.plot(learning_rate(tf.range(50, dtype=tf.float32)))
+plt.plot(learning_rate_custom_1(tf.range(50, dtype=tf.float32)))
 plt.ylabel("Learning Rate")
 plt.xlabel("Train Step")
 
@@ -387,11 +387,11 @@ learning_rate_custom_2 = tf.optimizers.schedules.ExponentialDecay(
     decay_steps=5,
     decay_rate=0.80,
     staircase=True)
-plt.plot(learning_rate(tf.range(50, dtype=tf.float32)))
+plt.plot(learning_rate_custom_2(tf.range(50, dtype=tf.float32)))
 plt.ylabel("Learning Rate")
 plt.xlabel("Train Step")
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)  # Adamax
+optimizer = tf.keras.optimizers.Adamax(learning_rate=learning_rate)  # Adamax
 
 """## Architecture"""
 
