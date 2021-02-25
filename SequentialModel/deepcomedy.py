@@ -59,6 +59,7 @@ divina_commedia = divina_commedia.replace(")", "-")
 divina_commedia = re.sub(r'[0-9]+', '', divina_commedia)
 divina_commedia = re.sub(r'\[.*\r?\n', '', divina_commedia)
 divina_commedia = re.sub(r'.*Canto.*\r?\n', '', divina_commedia)
+divina_commedia = re.sub(r'.*?\n\n\n\n', "", divina_commedia)  # remove the last row of each Canto, it's alone and can ruin the generation on correct terzine
 
 # divina_commedia = divina_commedia.replace(" \n", "\n")  # with this i lose the "terzina": results are not so exciting
 #divina_commedia = divina_commedia.replace(" \n", "<eot>")  # end of terzina
