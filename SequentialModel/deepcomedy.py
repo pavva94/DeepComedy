@@ -553,23 +553,28 @@ I will instantiate a new `generator` RNN with these new features, and transfer t
 X = Input(shape=(None, ), batch_size=1)
 embedded = Embedding(vocab_size, embedding_size)(X)
 embedded = Dense(embedding_size, relu)(embedded)
+
 encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_1,
                                                          return_sequences=True,
                                                          return_state=True,
                                               stateful=True)(embedded)
 encoder_output = BatchNormalization()(encoder_output)
-encoder_output = Dropout(0.3)(encoder_output)
+encoder_output = Dropout(0.5)(encoder_output)
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
 initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
+
 encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_2,
                                                          return_sequences=True,
                                                          return_state=True,
                                                 stateful=True)(encoder_output, initial_state=initial_state_double)
 
 encoder_output = BatchNormalization()(encoder_output)
-encoder_output = Dropout(0.3)(encoder_output)
+encoder_output = Dropout(0.5)(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
+
+# Dropout
+encoder_output = Dropout(0.5)(encoder_output)
 
 Y = Dense(units=vocab_size)(encoder_output)
 
