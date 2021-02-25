@@ -65,7 +65,7 @@ divina_commedia = re.sub(r'.*?\n\n\n\n', "", divina_commedia)  # remove the last
 #divina_commedia = divina_commedia.replace(" \n", "<eot>")  # end of terzina
 #divina_commedia = divina_commedia.replace("\n", "<eor>")
 
-print(divina_commedia[1:1000])
+print(divina_commedia[1:15000])
 
 # Check lenght of text
 print(len(divina_commedia))
@@ -313,7 +313,7 @@ def get_custom_loss(x_batch, y_batch):
 # extract matrix of index of where the zeros are
 #tf.map_fn(fn=lambda t: t.map_fn(fn=lambda x: 1 if x == 0 else 0), elems=x_batch)
 
-"""# Model
+"""# Training Model
 
 At this point, I can specify the RNN architecture with all its hyperparameters.
 
@@ -439,7 +439,7 @@ Y = Dense(units=vocab_size)(encoder_output)
 
 # Compile model
 model = Model(inputs=X, outputs=Y)
-model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), optimizer='adam', metrics=[perplexity, sparse_categorical_crossentropy])
+model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), optimizer=optimizer, metrics=[perplexity, sparse_categorical_crossentropy])
 print(model.summary())
 
 """## Training"""
@@ -484,9 +484,9 @@ for epoch in range(n_epochs):
     print("{}.  \t  Total-Loss: {}  \t  Custom-Loss: {}  \t Time: {} sec/epoch".format(
         epoch+1, current_loss.numpy(),custom, round(time.time()-start, 2)))
 
-model.save("deep_comedy_custom_loss_01.h5")
+model.save("deep_comedy_custom_loss_01_62char.h5")
 from google.colab import files
-files.download('deep_comedy_custom_loss_01.h5')
+files.download('deep_comedy_custom_loss_01_62char.h5')
 
 """## Graphs"""
 
@@ -529,13 +529,15 @@ model_custom_loss_05.h5: **200**,150, 200, 2048,4096,300,50,0.001
 
 model_custom_loss_06.h5: **100**,150, 200, 2048,4096,300,50,0.001
 
-# Text Generation
+# Generative Model
 
 At this point, let's check how the model generates text. In order to do it, I must make some changes to my RNN architecture above.
 
 First, I must change the fixed batch size. After training, I want to feed just one sentence into my Network to make it continue the character sequence. I will feed a string into the model, make it predict the next character, update the input sequence, and repeat the process until a long generated text is obtained. Because of this, the succession of input sequences is now different from training session, in which portions of text were sampled randomly. I now have to set `stateufl = True` in the `LSTM()` layer, so that each LSTM cell will keep in memory the internal state from the previous sequence. With this I hope the model will better remember sequential information while generating text.
 
 I will instantiate a new `generator` RNN with these new features, and transfer the trained weights of my `RNN` into it.
+
+## Architecture
 """
 
 # Input Layer
@@ -567,12 +569,16 @@ generator = Model(inputs=X, outputs=Y)
 generator.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True), optimizer='adam', metrics=[perplexity, sparse_categorical_crossentropy])
 print(generator.summary())
 
+"""## Loading weights"""
+
 # Import trained weights from RNN to generator
-load_file = True
+load_file = False
 if load_file:
-  generator.load_weights("deep_comedy_custom_loss_01.h5")
+  generator.load_weights("deep_comedy_final_1_batch.h5")
 else:
   generator.set_weights(model.get_weights())
+
+"""## Generating Methods"""
 
 def generate_text(start_string, model, num_generate = 1000, temperature = 1.0):
     
@@ -616,14 +622,12 @@ chè la diritta via era smarrita.
 
 """
 
-for t in [0.1, 0.2, 0.2, 0.5, 1.0]:
+for t in [0.1, 0.2, 0.3, 0.5, 1.0]:
     print("####### TEXT GENERATION - temperature = {}\n".format(t))
     print(generate_text(start_string, generator, num_generate = 1000, temperature = t))
     print("\n\n\n")
 
-print("FINISCHED")
-
-# Exam mode for 1 Canto so 33 terzine
+# Exam mode for 1 Canto so 33 terzine. 4000 characters to write
 start_inferno = """
 Nel mezzo del cammin di nostra vita
 mi ritrovai per una selva oscura,
