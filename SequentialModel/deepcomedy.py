@@ -657,7 +657,28 @@ in una parte più e meno altrove.
 
 """
 
-print(generate_text(start_string = start_purgatorio, num_generate = 1000, temperature = 0.1))
+start_new = """ """
+
+print(generate_text(start_new, generator, num_generate = 7000, temperature = 0.1))
+
+"""# Test Plagiarism
+
+Include the file **ngrams_plagiarism.py** downloaded from Virtuale
+"""
+
+from ngrams_plagiarism import ngrams_plagiarism
+
+gen = open('generated.txt').read()
+truth = open('Inferno.txt').read()
+ngrams_plagiarism(gen, truth)
+
+"""# Metrics
+
+Include the content of the folder **Deep Comedy Metrics** downloaded from Virtuale.
+
+"""
+
+!python3 main.py
 
 """# NEW IDEAS
 
