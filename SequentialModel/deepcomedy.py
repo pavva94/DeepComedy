@@ -412,9 +412,12 @@ encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_1,return_sequenc
 encoder_output = BatchNormalization()(encoder_output)
 
 # Dropout
-encoder_output = Dropout(0.3)(encoder_output)
+encoder_output = Dropout(0.5)(encoder_output)
 # Dense layer
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
+
+# Dropout
+encoder_output = Dropout(0.5)(encoder_output)
 
 # Concat of first LSTM hidden state
 initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
@@ -424,9 +427,12 @@ encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_2,return_sequenc
 encoder_output = BatchNormalization()(encoder_output)
 
 # Dropout
-encoder_output = Dropout(0.3)(encoder_output)
+encoder_output = Dropout(0.5)(encoder_output)
 # Dense layer
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
+
+# Dropout
+encoder_output = Dropout(0.5)(encoder_output)
 
 # Prediction Layer
 Y = Dense(units=vocab_size)(encoder_output)
