@@ -324,13 +324,13 @@ At this point, I can specify the RNN architecture with all its hyperparameters.
 vocab_size = len(char2idx)
 
 # size of mini batches during training
-batch_size = 100  # 100
+batch_size = 128  # 100
 
 # size of training subset at each epoch
 subset_size = batch_size * 100
 
 # vector size of char embeddings
-embedding_size = 200  # 250
+embedding_size = 200  # 200 250
 
 lstm_unit_1 = 2048
 lstm_unit_2 = 4096
@@ -338,14 +338,13 @@ lstm_unit_2 = 4096
 # debug variables
 debug_model = False
 if debug_model:
-  lstm_unit_1 = 1024
-  lstm_unit_2 = 2048
+  lstm_unit_1 = 256
+  lstm_unit_2 = 512
 
 
-hidden_size = 300  # for Dense() layers 250
+hidden_size = 256  # for Dense() layers 250
 
-n_epochs = 50
-
+n_epochs = 58
 learning_rate = 0.001  # 0.0001
 
 """## Metrics"""
