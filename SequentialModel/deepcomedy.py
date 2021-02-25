@@ -27,7 +27,7 @@ import tensorflow as tf
 print(tf.__version__)
 
 from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Attention, Flatten, Input
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Attention, Flatten, Input, BatchNormalization
 from tensorflow.keras.activations import elu, relu, softmax
 from tensorflow.keras.metrics import categorical_accuracy, sparse_categorical_crossentropy, categorical_crossentropy
 
@@ -408,9 +408,9 @@ embedded = Embedding(vocab_size, embedding_size,
 embedded = Dense(embedding_size, relu)(embedded)
 
 # First LSTM
-encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_1,
-                                                         return_sequences=True,
-                                                         return_state=True)(embedded)
+encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_1,return_sequences=True,return_state=True)(embedded)
+encoder_output = BatchNormalization()(encoder_output)
+
 # Dropout
 encoder_output = Dropout(0.3)(encoder_output)
 # Dense layer
@@ -420,9 +420,9 @@ encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 initial_state_double = [tf.concat([hidden_state, hidden_state], 1), tf.concat([hidden_state, hidden_state], 1)]
 
 # Second LSTM
-encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_2,
-                                                         return_sequences=True,
-                                                         return_state=True)(encoder_output, initial_state=initial_state_double)
+encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_2,return_sequences=True, return_state=True)(encoder_output, initial_state=initial_state_double) 
+encoder_output = BatchNormalization()(encoder_output)
+
 # Dropout
 encoder_output = Dropout(0.3)(encoder_output)
 # Dense layer
@@ -540,6 +540,7 @@ encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_1,
                                                          return_sequences=True,
                                                          return_state=True,
                                               stateful=True)(embedded)
+encoder_output = BatchNormalization()(encoder_output)
 encoder_output = Dropout(0.3)(encoder_output)
 encoder_output = Dense(embedding_size, activation='relu')(encoder_output)
 
@@ -548,6 +549,8 @@ encoder_output, hidden_state, cell_state = LSTM(units=lstm_unit_2,
                                                          return_sequences=True,
                                                          return_state=True,
                                                 stateful=True)(encoder_output, initial_state=initial_state_double)
+
+encoder_output = BatchNormalization()(encoder_output)
 encoder_output = Dropout(0.3)(encoder_output)
 encoder_output = Dense(hidden_size, activation='relu')(encoder_output)
 
