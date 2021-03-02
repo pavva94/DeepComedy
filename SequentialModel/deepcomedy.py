@@ -349,9 +349,9 @@ learning_rate = 0.001  # 0.0001
 
 """## Metrics"""
 
-def perplexity(labels, logits):
+def perplexity_metric(loss):
     """Calculates perplexity metric = 2^(entropy) or e^(entropy)"""
-    return pow(2, loss(y_true=labels, y_pred=logits))
+    return tf.exp(loss)
 
 """## Custom learning rate"""
 
@@ -460,18 +460,22 @@ def train_on_batch(x, y, min_custom_loss):
     gradients = tape.gradient(current_loss, model.trainable_variables)
     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
+    perp = perplexity_metric(tf.reduce_mean(scce))
+
     # checking for the best model using custom loss
+    # needed to do here because here we can save the model
     if custom < min_custom_loss:
       min_custom_loss = custom
       model.save("best_model.h5", overwrite=True)
-    return current_loss, scce, custom, min_custom_loss
+    return current_loss, scce, custom, perp, min_custom_loss
 
 
 loss_history = []
 custom_loss_history = []
+perplexity_history = []
 
 
-for epoch in range(5):
+for epoch in range(n_epochs):
     
     start = time.time()
     
@@ -486,12 +490,19 @@ for epoch in range(5):
 
         y = sample_target[ take:take+batch_size , : ]
 
-        current_loss, scce, custom, min_custom_loss = train_on_batch(x, y, min_custom_loss)
+        current_loss, scce, custom, perplexity, new_min_custom_loss = train_on_batch(x, y, min_custom_loss)
+
+        # save infos about the new min_custom_loss
+        if new_min_custom_loss < min_custom_loss:
+          min_custom_loss = new_min_custom_loss
+          min_custom_epoch = epoch
+
         loss_history.append(current_loss)
         custom_loss_history.append(custom)
+        perplexity_history.append(perplexity)
     
-    print("{}.  \t  Total-Loss: {}  \t  Custom-Loss: {}  \t Time: {} sec/epoch".format(
-        epoch+1, current_loss.numpy(),custom, round(time.time()-start, 2)))
+    print("{}.  \t  Total-Loss: {}  \t  Custom-Loss: {}  \t Perplexity: {}  \t Time: {} sec/epoch".format(
+        epoch+1, current_loss.numpy(), custom, perplexity, round(time.time()-start, 2)))
 
 model.save("deep_comedy_custom_loss_01_62char.h5")
 from google.colab import files
@@ -517,10 +528,9 @@ ax2.tick_params(axis='y', labelcolor=color)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
 plt.show()
 
-plt.plot(loss_history)
+plt.plot(perplexity_history)
 plt.xlabel("Iterations")
-plt.ylabel("Total Loss")
-plt.title("Training Loss")
+plt.ylabel("Perplexity")
 plt.show()
 
 """## Saved model
